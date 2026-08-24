@@ -12,28 +12,32 @@ set -euo pipefail
 
 GENERATOR_VERSION="v3.3.1"
 DEST="${1:-$HOME/KH2SeedGenerator}"
-PYTHON_FORMULA="python@3.12"
+# Self-contained Python (no Homebrew, no admin password), from
+# https://github.com/astral-sh/python-build-standalone
+PYTHON_RELEASE="20260814"
+PYTHON_BUILD="cpython-3.12.14"
 
 say() { printf '\n==> %s\n' "$*"; }
 
 if [ -e "$DEST/localUI.py" ]; then
   say "Generator already installed at $DEST, updating launcher only."
 else
-  if ! command -v brew >/dev/null; then
-    echo "Homebrew is required (https://brew.sh). Install it, then re-run this script."
-    exit 1
-  fi
-
-  PYBIN="$(brew --prefix "$PYTHON_FORMULA" 2>/dev/null)/bin/python3.12"
-  if [ ! -x "$PYBIN" ]; then
-    say "Installing Python 3.12 (via Homebrew)..."
-    brew install "$PYTHON_FORMULA"
-    PYBIN="$(brew --prefix "$PYTHON_FORMULA")/bin/python3.12"
-  fi
-
   say "Downloading seed generator $GENERATOR_VERSION source..."
   git clone -q --depth 1 --branch "$GENERATOR_VERSION" \
     https://github.com/tommadness/KH2Randomizer "$DEST"
+
+  PYBIN="$DEST/python/bin/python3.12"
+  if [ ! -x "$PYBIN" ]; then
+    case "$(uname -m)" in
+      arm64) PYARCH="aarch64-apple-darwin" ;;
+      *)     PYARCH="x86_64-apple-darwin" ;;
+    esac
+    say "Downloading a private copy of Python (24 MB, used only by the generator)..."
+    curl -sL -o "$DEST/python.tar.gz" \
+      "https://github.com/astral-sh/python-build-standalone/releases/download/$PYTHON_RELEASE/$PYTHON_BUILD+$PYTHON_RELEASE-$PYARCH-install_only.tar.gz"
+    tar -xzf "$DEST/python.tar.gz" -C "$DEST"
+    rm -f "$DEST/python.tar.gz"
+  fi
 
   say "Installing Python dependencies (a few minutes)..."
   "$PYBIN" -m venv "$DEST/.venv"
