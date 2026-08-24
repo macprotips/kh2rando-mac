@@ -11,7 +11,7 @@ of which is waiting on the one-time extraction step.
 Check you have:
 
 - A Mac with Apple Silicon (M1 or newer; check Apple menu > About This Mac),
-  running macOS 14 (Sonoma) or newer
+  running macOS 14 (Sonoma) or newer. Intel Macs are not supported.
 - KINGDOM HEARTS HD 1.5+2.5 ReMIX purchased on Steam or the Epic Games Store
 - About 100 GB of free disk space in total: the game is about 70 GB and the one-time
   data extraction is another 30 GB. Not enough room on your Mac? An external drive

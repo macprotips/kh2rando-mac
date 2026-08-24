@@ -78,10 +78,9 @@ build_arch() {
 }
 
 build_arch osx-arm64 "$HOME/.dotnet/dotnet"
-if [ -x "$HOME/.dotnet-x64/dotnet" ]; then
+# Intel is opt-in (BUILD_X64=1): Apple Silicon is the supported platform.
+if [ "${BUILD_X64:-}" = "1" ] && [ -x "$HOME/.dotnet-x64/dotnet" ]; then
   build_arch osx-x64 "$HOME/.dotnet-x64/dotnet"
-else
-  echo "WARNING: ~/.dotnet-x64 not found, skipping Intel build."
 fi
 
 echo "==> Uploading to GitHub release $VERSION..."
