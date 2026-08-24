@@ -55,6 +55,7 @@ rm -rf "$OUT" && mkdir -p "$OUT"
 
 build_arch() {
   local rid="$1" dotnet="$2"
+  local label="${rid/osx/macos}"
   echo "==> Building $rid..."
   find OpenKh src -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
   DOTNET_ROOT="$(dirname "$dotnet")" "$dotnet" test src/Kh2RandoMac.Tests -c Release
@@ -69,11 +70,11 @@ build_arch() {
     --entitlements packaging/entitlements.plist -s "$SIGN_IDENTITY" "$OUT/$rid/cli/kh2rando"
 
   bash packaging/notarize.sh "$OUT/$rid/KH2 Rando Manager.app"
-  ditto -c -k --keepParent "$OUT/$rid/KH2 Rando Manager.app" "$OUT/KH2-Rando-Manager-$VERSION-$rid.zip"
+  ditto -c -k --keepParent "$OUT/$rid/KH2 Rando Manager.app" "$OUT/KH2-Rando-Manager-$VERSION-$label.zip"
 
-  ditto -c -k "$OUT/$rid/cli" "$OUT/kh2rando-cli-$VERSION-$rid.zip"
+  ditto -c -k "$OUT/$rid/cli" "$OUT/kh2rando-cli-$VERSION-$label.zip"
   echo "==> Notarizing $rid CLI..."
-  notarize_zip "$OUT/kh2rando-cli-$VERSION-$rid.zip"
+  notarize_zip "$OUT/kh2rando-cli-$VERSION-$label.zip"
 }
 
 build_arch osx-arm64 "$HOME/.dotnet/dotnet"
