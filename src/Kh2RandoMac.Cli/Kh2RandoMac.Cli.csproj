@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>kh2rando</AssemblyName>
+    <RootNamespace>Kh2RandoMac.Cli</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kh2RandoMac.Core\Kh2RandoMac.Core.csproj" />
+  </ItemGroup>
+
+</Project>

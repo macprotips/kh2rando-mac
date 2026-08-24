@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test src/Kh2RandoMac.Tests -c Release
+
+      - name: Build CLI
+        run: dotnet build src/Kh2RandoMac.Cli -c Release
+
+      - name: Build GUI
+        run: dotnet build src/Kh2RandoMac.Gui -c Release

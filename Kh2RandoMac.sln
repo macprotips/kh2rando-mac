@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CB32360C-F20B-40DA-B5D5-F30D536ED442}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kh2RandoMac.Core", "src\Kh2RandoMac.Core\Kh2RandoMac.Core.csproj", "{549A0949-3DFE-4F36-A456-A4FC9D3FC166}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kh2RandoMac.Cli", "src\Kh2RandoMac.Cli\Kh2RandoMac.Cli.csproj", "{72B1613A-D2FB-484B-8ECC-B9B1D836AC83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kh2RandoMac.Gui", "src\Kh2RandoMac.Gui\Kh2RandoMac.Gui.csproj", "{A0EC589C-4A10-48CB-B102-2097F83BEEF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kh2RandoMac.Tests", "src\Kh2RandoMac.Tests\Kh2RandoMac.Tests.csproj", "{B7CD1C92-C160-4EC2-959A-BA662D1A08E8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{549A0949-3DFE-4F36-A456-A4FC9D3FC166}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{549A0949-3DFE-4F36-A456-A4FC9D3FC166}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{549A0949-3DFE-4F36-A456-A4FC9D3FC166}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{549A0949-3DFE-4F36-A456-A4FC9D3FC166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72B1613A-D2FB-484B-8ECC-B9B1D836AC83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72B1613A-D2FB-484B-8ECC-B9B1D836AC83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72B1613A-D2FB-484B-8ECC-B9B1D836AC83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72B1613A-D2FB-484B-8ECC-B9B1D836AC83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0EC589C-4A10-48CB-B102-2097F83BEEF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0EC589C-4A10-48CB-B102-2097F83BEEF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0EC589C-4A10-48CB-B102-2097F83BEEF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0EC589C-4A10-48CB-B102-2097F83BEEF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7CD1C92-C160-4EC2-959A-BA662D1A08E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7CD1C92-C160-4EC2-959A-BA662D1A08E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7CD1C92-C160-4EC2-959A-BA662D1A08E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7CD1C92-C160-4EC2-959A-BA662D1A08E8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{549A0949-3DFE-4F36-A456-A4FC9D3FC166} = {CB32360C-F20B-40DA-B5D5-F30D536ED442}
+		{72B1613A-D2FB-484B-8ECC-B9B1D836AC83} = {CB32360C-F20B-40DA-B5D5-F30D536ED442}
+		{A0EC589C-4A10-48CB-B102-2097F83BEEF9} = {CB32360C-F20B-40DA-B5D5-F30D536ED442}
+		{B7CD1C92-C160-4EC2-959A-BA662D1A08E8} = {CB32360C-F20B-40DA-B5D5-F30D536ED442}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,15 @@
+kh2rando-mac
+Copyright 2026 macprotips
+
+This product includes software developed by the OpenKH project
+(https://github.com/OpenKH/OpenKh), Copyright 2019-2026 OpenKH Team and
+Contributors, licensed under the Apache License 2.0. OpenKH is consumed as a
+git submodule and its prebuilt Panacea mod loader is downloaded from official
+OpenKH releases at runtime.
+
+At runtime this product also downloads LuaBackend
+(https://github.com/Sirius902/LuaBackend) from its official releases.
+
+This project is not affiliated with Square Enix or Disney. It does not
+distribute any game assets; it operates on the user's own legally purchased
+copy of KINGDOM HEARTS HD 1.5+2.5 ReMIX.

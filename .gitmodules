@@ -1,0 +1,4 @@
+[submodule "OpenKh"]
+	path = OpenKh
+	url = https://github.com/OpenKH/OpenKh.git
+	ignore = untracked

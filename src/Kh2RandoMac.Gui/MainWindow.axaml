@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kh2RandoMac.Gui.MainWindow"
+        Title="KH2 Rando Manager"
+        Width="900" Height="660"
+        MinWidth="760" MinHeight="500">
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="14">
+
+    <!-- Status header -->
+    <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,10,0">
+          <TextBlock x:Name="GameStatusText" Text="Game: …" FontSize="13" TextWrapping="Wrap"/>
+          <TextBlock x:Name="LoaderStatusText" Text="Mod loader: …" FontSize="13" TextWrapping="Wrap"/>
+          <TextBlock x:Name="DataStatusText" Text="Game data: …" FontSize="13" TextWrapping="Wrap"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
+                  ToolTip.Tip="One-time setup: finds your game, installs the Panacea mod loader and LuaBackend into it, and configures the bottle. Quit Steam and the game in CrossOver first."/>
+          <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
+                  ToolTip.Tip="Unpacks the game's files so mods can be built against them. One time, 10 to 20 minutes, about 30 GB. Run again after a game update."/>
+          <Button x:Name="UpdatesButton" Content="Check Updates" Click="OnCheckUpdates"
+                  ToolTip.Tip="Update GitHub-installed mods (like GoA) to their latest version"/>
+          <Button x:Name="RefreshButton" Content="Refresh" Click="OnRefresh"
+                  ToolTip.Tip="Re-check the game, mod loader, and mod list."/>
+          <Button x:Name="ResetButton" Content="Reset…" Click="OnReset"
+                  ToolTip.Tip="Return the game to vanilla: removes the mod loader, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Install row -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,10">
+      <TextBox x:Name="RepoBox" Grid.Column="0"
+               Watermark="GitHub mod (author/repo), or drag any mod/seed file into this window"
+               ToolTip.Tip="Type a GitHub mod as author/repo, for example KH2FM-Mods-Num/GoA-ROM-Edition, then click Install from GitHub."/>
+      <Button x:Name="InstallGitButton" Grid.Column="1" Content="Install from GitHub" Margin="8,0,0,0" Click="OnInstallGit"
+              ToolTip.Tip="Download and enable the mod typed on the left."/>
+      <Button x:Name="InstallZipButton" Grid.Column="2" Content="Install Mod / Seed File…" Margin="8,0,0,0" Click="OnInstallZip"
+              ToolTip.Tip="Install a randomizer seed zip, a mod zip, a .kh2pcpatch, or a standalone .lua script. Dragging files onto this window works too."/>
+      <Button x:Name="InstallGoaButton" Grid.Column="3" Content="⭐ Install GoA" Margin="8,0,0,0" Click="OnInstallGoa"
+              ToolTip.Tip="One-click install of Garden of Assemblage, the base mod every randomizer seed needs"/>
+    </Grid>
+
+    <!-- Mod list -->
+    <Border Grid.Row="2" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8">
+      <ScrollViewer>
+        <ItemsControl x:Name="ModList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="10,6" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="Enabled mods are included in the next Build."/>
+                  <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Name}" FontSize="11" Opacity="0.6"/>
+                  </StackPanel>
+                  <Button Grid.Column="2" Content="▲" FontSize="10" Padding="8,4"
+                          Click="OnMoveUp" Tag="{Binding}"
+                          ToolTip.Tip="Move up. Mods higher in the list win conflicts."/>
+                  <Button Grid.Column="3" Content="▼" FontSize="10" Padding="8,4" Margin="4,0"
+                          Click="OnMoveDown" Tag="{Binding}"
+                          ToolTip.Tip="Move down."/>
+                  <Button Grid.Column="4" Content="Remove" FontSize="11" Padding="8,4"
+                          Click="OnRemoveMod" Tag="{Binding}"
+                          ToolTip.Tip="Uninstall this mod from the workspace."/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Action row: hint yields space first; controls always stay visible -->
+    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="0,10,0,10">
+      <TextBlock x:Name="OrderHint" Grid.Column="0"
+                 Text="Mods at the top win conflicts. Build after any change."
+                 VerticalAlignment="Center" Opacity="0.6" FontSize="12" Margin="0,0,12,0"
+                 TextTrimming="CharacterEllipsis"/>
+      <Button x:Name="MoviesButton" Grid.Column="1" Content="Movies: On" Padding="14,8" Margin="0,0,8,0"
+              Click="OnToggleMovies"
+              ToolTip.Tip="Movie cutscenes crash the game under CrossOver. Skipping renames the KH2 movie folder so the game skips them instead of crashing. Reversible."/>
+      <Button Grid.Column="2" Content="Seed Generator" Padding="14,8" Margin="0,0,8,0"
+              Click="OnOpenSeedGenerator"
+              ToolTip.Tip="Open the official KH2 Randomizer seed generator. If it is not installed yet, this installs it first (a few minutes)."/>
+      <Button x:Name="BuildButton" Grid.Column="3" Content="Build" FontWeight="SemiBold"
+              Padding="18,8" Margin="0,0,8,0" Click="OnBuild"
+              ToolTip.Tip="Compile the enabled mods into the folder the game reads. Do this after any change: new seed, toggled mod, reordered list."/>
+      <Button x:Name="RunButton" Grid.Column="4" Content="Build &amp; Run" FontWeight="SemiBold"
+              Padding="18,8" Click="OnBuildRun"
+              ToolTip.Tip="Build, then launch the game through CrossOver."/>
+    </Grid>
+
+    <!-- Log -->
+    <Border Grid.Row="4" Background="#181818" CornerRadius="8" Padding="8" Height="120">
+      <ScrollViewer x:Name="LogScroll">
+        <TextBlock x:Name="LogText" FontFamily="Menlo, monospace" FontSize="11"
+                   TextWrapping="Wrap" Text="Ready."/>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</Window>
