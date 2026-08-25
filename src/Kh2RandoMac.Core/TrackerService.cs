@@ -66,13 +66,24 @@ public class TrackerService
         // Wine's built-in mono registers itself as .NET 4.8, which makes the real
         // installer exit early claiming success. Remove it first.
         var listing = RunWine(bottle, log, quiet: true, "uninstaller", "--list");
-        foreach (var (id, name) in ParseUninstallerList(listing))
+        var entries = ParseUninstallerList(listing);
+        FileLog.Write($"[tracker] bottle packages: {string.Join("; ", entries.Select(e => e.Name))}");
+        foreach (var (id, name) in entries)
         {
-            if (!name.Contains("Wine Mono", StringComparison.OrdinalIgnoreCase))
+            if (!IsMonoPackage(name))
                 continue;
             log($"Removing '{name}' (Wine's .NET substitute, it blocks the real installer)...");
             RunWine(bottle, log, quiet: true, "uninstaller", "--remove", id);
         }
+
+        // The mono uninstall does not always clear the registry markers that claim
+        // .NET 4.x is installed, and the installer trusts them. Delete them outright;
+        // the real installer recreates them. reg delete errors on a missing key,
+        // which is fine.
+        RunWine(bottle, log, quiet: true, "reg", "delete",
+            @"HKLM\Software\Microsoft\NET Framework Setup\NDP\v4", "/f");
+        RunWine(bottle, log, quiet: true, "reg", "delete",
+            @"HKLM\Software\Wow6432Node\Microsoft\NET Framework Setup\NDP\v4", "/f");
 
         var installer = Path.Combine(TrackerDir(workspace), "ndp48.exe");
         if (!File.Exists(installer))
@@ -88,11 +99,13 @@ public class TrackerService
         try
         {
             var exit = RunWineExe(bottle, log, installer, "/q", "/norestart");
+            FileLog.Write($"[tracker] ndp48 installer exit code: {exit}");
             // 0 = success, 3010 = success but Windows wants a reboot (meaningless in a bottle).
             if (exit != 0 && exit != 3010)
                 throw new InvalidOperationException(
                     $".NET Framework installer failed with code {exit}. " +
-                    "Check the setup log in the bottle under users/crossover/AppData/Local/Temp.");
+                    $"Installer verdict: {ReadSetupLogSummary(bottle) ?? "no setup log found"}. " +
+                    "Try clicking Tracker again; the install is safe to retry.");
         }
         finally
         {
@@ -102,8 +115,44 @@ public class TrackerService
         if (!HasDotNet48(bottle))
             throw new InvalidOperationException(
                 ".NET Framework installer finished but the runtime is missing from the bottle. " +
-                "Check the setup log in the bottle under users/crossover/AppData/Local/Temp.");
+                $"Installer verdict: {ReadSetupLogSummary(bottle) ?? "no setup log found"}. " +
+                "Try clicking Tracker again; the install is safe to retry.");
         log(".NET Framework 4.8 installed.");
+    }
+
+    /// <summary>Names Wine's .NET substitute goes by across Wine and CrossOver versions.</summary>
+    public static bool IsMonoPackage(string name) =>
+        name.Contains("Mono", StringComparison.OrdinalIgnoreCase) &&
+        (name.Contains("Wine", StringComparison.OrdinalIgnoreCase) ||
+         name.Contains("CrossOver", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// The one line worth surfacing from Microsoft's setup log: its own verdict.
+    /// The installer writes an HTML log per run; read the newest.
+    /// </summary>
+    public static string? ReadSetupLogSummary(Bottle bottle)
+    {
+        try
+        {
+            var usersDir = Path.Combine(bottle.DriveC, "users");
+            if (!Directory.Exists(usersDir))
+                return null;
+            var newest = Directory.GetDirectories(usersDir)
+                .Select(u => Path.Combine(u, "AppData", "Local", "Temp"))
+                .Where(Directory.Exists)
+                .SelectMany(t => Directory.GetFiles(t, "Microsoft .NET Framework 4.8 Setup_*.html"))
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+            if (newest == null)
+                return null;
+            var match = System.Text.RegularExpressions.Regex.Match(
+                File.ReadAllText(newest), @"Final Result: [^<]*");
+            return match.Success ? match.Value.Trim() : $"no verdict line in {Path.GetFileName(newest)}";
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>Launch the tracker in the bottle. Returns a user-facing note.</summary>
@@ -197,8 +246,10 @@ public class TrackerService
             psi.ArgumentList.Add(a);
         using var p = Process.Start(psi)!;
         var output = p.StandardOutput.ReadToEnd();
-        p.StandardError.ReadToEnd();
+        var stderr = p.StandardError.ReadToEnd();
         p.WaitForExit();
+        var tail = stderr.Length > 400 ? stderr[^400..] : stderr;
+        FileLog.Write($"[tracker] wine {args.FirstOrDefault()} exit={p.ExitCode} stderr: {tail.Trim()}");
         if (!quiet)
             log(output.Trim());
         return output;

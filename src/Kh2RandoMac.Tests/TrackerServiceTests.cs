@@ -28,6 +28,33 @@ public class TrackerServiceTests
         Assert.Empty(TrackerService.ParseUninstallerList("just some log line\nanother"));
     }
 
+    [Theory]
+    [InlineData("Wine Mono Windows Support", true)]
+    [InlineData("Wine Mono Runtime", true)]
+    [InlineData("CrossOver Mono", true)]
+    [InlineData("CXHTML|CrossOver HTML engine", false)]
+    [InlineData("Steam", false)]
+    [InlineData("Harmonograph Deluxe", false)]
+    public void IsMonoPackage_MatchesWineAndCrossOverVariantsOnly(string name, bool expected)
+    {
+        Assert.Equal(expected, TrackerService.IsMonoPackage(name));
+    }
+
+    [Fact]
+    public void ReadSetupLogSummary_FindsVerdictInNewestLog()
+    {
+        using var fake = new FakeBottle();
+        var temp = Path.Combine(fake.Bottle.DriveC, "users", "crossover", "AppData", "Local", "Temp");
+        Directory.CreateDirectory(temp);
+        Assert.Null(TrackerService.ReadSetupLogSummary(fake.Bottle));
+
+        File.WriteAllText(Path.Combine(temp, "Microsoft .NET Framework 4.8 Setup_20260825_1.html"),
+            "<html>Final Result: Installation completed successfully with success code: (0x00000000)</html>");
+        var summary = TrackerService.ReadSetupLogSummary(fake.Bottle);
+        Assert.NotNull(summary);
+        Assert.StartsWith("Final Result: Installation completed successfully", summary);
+    }
+
     [Fact]
     public void HasDotNet48_RequiresClrDll_NotJustTheFolder()
     {
