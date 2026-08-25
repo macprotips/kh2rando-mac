@@ -125,7 +125,44 @@ public class TrackerService
         psi.ArgumentList.Add(bottle.Name);
         psi.ArgumentList.Add(ExePath(workspace));
         Process.Start(psi);
-        return "Tracker launched. In its Options menu, auto-tracking connects once the game is running.";
+        return "Tracker starting...";
+    }
+
+    /// <summary>
+    /// True once the tracker has a window on screen: launching takes Wine a while, and
+    /// the process only checks in with macOS as a GUI app when its window appears.
+    /// </summary>
+    public static bool IsTrackerVisible()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("/usr/bin/lsappinfo", "list")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            using var p = Process.Start(psi)!;
+            var output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit(5000);
+            return output.Contains($"\"{ExeName}\" ASN", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Poll until the tracker window is on screen or the timeout passes.</summary>
+    public static async Task<bool> WaitUntilVisible(TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (IsTrackerVisible())
+                return true;
+            await Task.Delay(1000);
+        }
+        return IsTrackerVisible();
     }
 
     /// <summary>

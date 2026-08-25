@@ -122,6 +122,7 @@ public partial class MainWindow : Window
             ResetButton.IsEnabled = !busy;
             MoviesButton.IsEnabled = !busy;
             HudButton.IsEnabled = !busy;
+            TrackerButton.IsEnabled = !busy;
             InstallGitButton.IsEnabled = !busy;
             InstallZipButton.IsEnabled = !busy;
             InstallGoaButton.IsEnabled = !busy;
@@ -474,9 +475,11 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool _trackerLaunching;
+
     private async void OnTracker(object? sender, RoutedEventArgs e)
     {
-        if (_busy)
+        if (_busy || _trackerLaunching)
             return;
         Bottle bottle;
         try
@@ -496,8 +499,7 @@ public partial class MainWindow : Window
 
         if (TrackerService.IsInstalled(_workspace, bottle))
         {
-            await RunTask("Launch tracker", () => Task.Run(() =>
-                Log(TrackerService.Launch(_workspace, bottle))));
+            await LaunchTrackerWithSpinner(bottle);
             return;
         }
 
@@ -510,11 +512,62 @@ public partial class MainWindow : Window
             "Install");
         if (!confirmed)
             return;
-        await RunTask("Install tracker", async () =>
+        await RunTask("Install tracker", () =>
+            new TrackerService().EnsureInstalled(_workspace, bottle, Log));
+        if (TrackerService.IsInstalled(_workspace, bottle))
+            await LaunchTrackerWithSpinner(bottle);
+    }
+
+    /// <summary>
+    /// Launch the tracker and keep the button in a "Launching…" spinner state until its
+    /// window is actually on screen (Wine takes 10 to 20 seconds to start it). Other
+    /// buttons stay usable during the wait.
+    /// </summary>
+    private async Task LaunchTrackerWithSpinner(Bottle bottle)
+    {
+        _trackerLaunching = true;
+        var original = TrackerButton.Content;
+        TrackerButton.IsEnabled = false;
+        TrackerButton.Content = new StackPanel
         {
-            await new TrackerService().EnsureInstalled(_workspace, bottle, Log);
-            Log(TrackerService.Launch(_workspace, bottle));
-        });
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 8,
+            Children =
+            {
+                new ProgressBar
+                {
+                    IsIndeterminate = true,
+                    Width = 40,
+                    Height = 5,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                },
+                new TextBlock
+                {
+                    Text = "Launching…",
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                },
+            },
+        };
+        try
+        {
+            TrackerService.Launch(_workspace, bottle);
+            Log("Launching the tracker...");
+            if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
+                Log("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+            else
+                Log("The tracker is taking longer than usual; its window should appear shortly.");
+        }
+        catch (Exception ex)
+        {
+            Log($"ERROR: {ex.Message}");
+            FileLog.Write(ex.ToString());
+        }
+        finally
+        {
+            _trackerLaunching = false;
+            TrackerButton.Content = original;
+            TrackerButton.IsEnabled = !_busy;
+        }
     }
 
     private void OnMoveUp(object? sender, RoutedEventArgs e) => MoveMod(sender, -1);

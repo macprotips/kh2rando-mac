@@ -324,6 +324,10 @@ static async Task<int> Tracker()
         await new TrackerService().EnsureInstalled(workspace, bottle, Say);
     }
     Say(TrackerService.Launch(workspace, bottle));
+    if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
+        Say("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+    else
+        Say("The tracker is taking longer than usual; its window should appear shortly.");
     return 0;
 }
 
