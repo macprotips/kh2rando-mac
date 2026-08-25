@@ -550,10 +550,15 @@ public partial class MainWindow : Window
         };
         try
         {
-            TrackerService.Launch(_workspace, bottle);
+            var proc = TrackerService.Launch(_workspace, bottle);
             Log("Launching the tracker...");
             if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
                 Log("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+            else if (proc.HasExited)
+            {
+                Log("The tracker exited without showing a window; it crashed while starting.");
+                Log($"Details were saved to {FileLog.LogPath}; attach that file to a bug report.");
+            }
             else
                 Log("The tracker is taking longer than usual; its window should appear shortly.");
         }

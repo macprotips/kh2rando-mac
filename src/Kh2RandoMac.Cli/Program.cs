@@ -323,9 +323,15 @@ static async Task<int> Tracker()
         Say("takes 15 to 30 minutes. Quit the game and Steam in CrossOver first.");
         await new TrackerService().EnsureInstalled(workspace, bottle, Say);
     }
-    Say(TrackerService.Launch(workspace, bottle));
+    var proc = TrackerService.Launch(workspace, bottle);
+    Say("Tracker starting...");
     if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
         Say("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+    else if (proc.HasExited)
+    {
+        Say("The tracker exited without showing a window; it crashed while starting.");
+        Say($"Details were saved to {FileLog.LogPath}; attach that file to a bug report.");
+    }
     else
         Say("The tracker is taking longer than usual; its window should appear shortly.");
     return 0;

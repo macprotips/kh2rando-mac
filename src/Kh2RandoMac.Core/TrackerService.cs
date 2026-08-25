@@ -155,8 +155,12 @@ public class TrackerService
         }
     }
 
-    /// <summary>Launch the tracker in the bottle. Returns a user-facing note.</summary>
-    public static string Launch(Workspace workspace, Bottle bottle)
+    /// <summary>
+    /// Launch the tracker in the bottle. Returns the wine process so callers can tell
+    /// "still starting" from "crashed"; its output is recorded to the app log when it
+    /// exits, because a WPF startup crash is otherwise invisible.
+    /// </summary>
+    public static Process Launch(Workspace workspace, Bottle bottle)
     {
         if (bottle.Platform != WinePlatform.CrossOver)
             throw new InvalidOperationException("The tracker currently supports CrossOver bottles only.");
@@ -165,16 +169,35 @@ public class TrackerService
 
         // The tracker writes its KhTrackerSettings folder into its working directory;
         // anchor it next to the exe so settings live in the workspace.
-        var psi = new ProcessStartInfo(CrossOverApp.CxStart)
+        var psi = new ProcessStartInfo(CrossOverApp.Wine)
         {
             UseShellExecute = false,
             WorkingDirectory = TrackerDir(workspace),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
         psi.ArgumentList.Add("--bottle");
         psi.ArgumentList.Add(bottle.Name);
         psi.ArgumentList.Add(ExePath(workspace));
-        Process.Start(psi);
-        return "Tracker starting...";
+        var p = Process.Start(psi)!;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var stdout = p.StandardOutput.ReadToEndAsync();
+                var stderr = p.StandardError.ReadToEndAsync();
+                await p.WaitForExitAsync();
+                static string Tail(string s) => s.Length > 1500 ? s[^1500..] : s;
+                FileLog.Write($"[tracker] wine process exited code={p.ExitCode}");
+                FileLog.Write($"[tracker] stdout tail: {Tail(await stdout).Trim()}");
+                FileLog.Write($"[tracker] stderr tail: {Tail(await stderr).Trim()}");
+            }
+            catch (Exception ex)
+            {
+                FileLog.Write($"[tracker] output capture failed: {ex.Message}");
+            }
+        });
+        return p;
     }
 
     /// <summary>
