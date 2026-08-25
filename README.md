@@ -107,8 +107,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 
 ## Community
 
-- [Kingdom Hearts Speedrunning Community Discord](https://discord.com/invite/0zkuwvE1U4TTu0rG)
-  for randomizer and speedrunning questions
+- [KH2FM Rando Discord](https://discord.gg/kh2fmrando) for randomizer questions
 - [Mac Gaming Discord](https://discord.com/invite/Sdf3vNbUKm) for CrossOver and
   Mac gaming help
 

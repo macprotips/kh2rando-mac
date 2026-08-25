@@ -170,8 +170,7 @@ That is the whole routine from now on:
 - Anything else: the app writes a log to `~/Library/Logs/kh2rando-mac.log`. Attach
   it to your bug report along with what the in-app log panel said. For randomizer
   gameplay questions (rules, hints, strategies), the
-  [Kingdom Hearts Speedrunning Community Discord](https://discord.com/invite/0zkuwvE1U4TTu0rG)
-  is where the players are.
+  [KH2FM Rando Discord](https://discord.gg/kh2fmrando) is where the players are.
 
 Re-running Setup is always safe; the bottle registry is backed up
 (`user.reg.kh2rando.bak` in the bottle folder) before it is touched.
