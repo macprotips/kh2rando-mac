@@ -86,6 +86,9 @@ public class SetupService
 
         new PanaceaService().Uninstall(gameDir);
         log("Panacea removed from the game folder.");
+        var appIdFile = Path.Combine(gameDir, "steam_appid.txt");
+        if (File.Exists(appIdFile))
+            File.Delete(appIdFile);
         new LuaBackendService().Uninstall(gameDir);
         log("LuaBackend removed.");
         if (MovieService.AreMoviesSkipped(gameDir))

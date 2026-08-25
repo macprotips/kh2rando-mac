@@ -121,6 +121,7 @@ public partial class MainWindow : Window
             UpdatesButton.IsEnabled = !busy;
             ResetButton.IsEnabled = !busy;
             MoviesButton.IsEnabled = !busy;
+            HudButton.IsEnabled = !busy;
             InstallGitButton.IsEnabled = !busy;
             InstallZipButton.IsEnabled = !busy;
             InstallGoaButton.IsEnabled = !busy;
@@ -156,7 +157,7 @@ public partial class MainWindow : Window
 
     private record StatusSnapshot(
         string GameStatus, string LoaderStatus, string DataStatus, List<ModInfo> Mods,
-        bool? MoviesSkipped);
+        bool? MoviesSkipped, bool? HudEnabled);
 
     /// <summary>Gathers state off the UI thread (filesystem scans can block on slow drives), then paints.</summary>
     private async Task RefreshAllAsync()
@@ -191,7 +192,10 @@ public partial class MainWindow : Window
                 try { moviesSkipped = MovieService.AreMoviesSkipped(config.GameDir!); }
                 catch { }
             }
-            return (config, workspace, new StatusSnapshot(gameStatus, loaderStatus, dataStatus, mods, moviesSkipped));
+            bool? hudEnabled = null;
+            try { hudEnabled = MetalHudService.IsEnabled(Bottle.Resolve(config)); } catch { }
+            return (config, workspace, new StatusSnapshot(gameStatus, loaderStatus, dataStatus, mods, moviesSkipped,
+                hudEnabled));
         });
 
         _config = snapshot.config;
@@ -203,6 +207,8 @@ public partial class MainWindow : Window
         DataStatusText.Text = status.DataStatus;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
         MoviesButton.IsEnabled = status.MoviesSkipped != null && !_busy;
+        HudButton.Content = status.HudEnabled == true ? "FPS HUD: On" : "FPS HUD: Off";
+        HudButton.IsEnabled = status.HudEnabled != null && !_busy;
         if ((DateTime.Now - _resetArmedAt).TotalSeconds > 10)
             ResetButton.Content = "Reset…";
 
@@ -387,6 +393,86 @@ public partial class MainWindow : Window
             Log("Movies skipped. The game now skips KH2 cutscenes instead of crashing on them. Toggle again to restore.");
         }
     }));
+
+    /// <summary>Small modal with a message and Continue/Cancel. Returns true on Continue.</summary>
+    private async Task<bool> ConfirmAsync(string title, string message, string continueText)
+    {
+        var result = false;
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 440,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        var text = new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+        var cancel = new Button { Content = "Cancel" };
+        var ok = new Button { Content = continueText, FontWeight = Avalonia.Media.FontWeight.SemiBold };
+        cancel.Click += (_, _) => dialog.Close();
+        ok.Click += (_, _) => { result = true; dialog.Close(); };
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 16,
+            Children =
+            {
+                text,
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 8,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Children = { cancel, ok },
+                },
+            },
+        };
+        await dialog.ShowDialog(this);
+        return result;
+    }
+
+    private async void OnToggleHud(object? sender, RoutedEventArgs e)
+    {
+        if (_busy)
+            return;
+        Bottle bottle;
+        try
+        {
+            bottle = Bottle.Resolve(_config);
+        }
+        catch
+        {
+            Log("Run Setup first; the FPS HUD is a per-bottle setting.");
+            return;
+        }
+        var current = MetalHudService.IsEnabled(bottle);
+        if (current == null)
+        {
+            Log("The FPS HUD toggle works with CrossOver bottles only.");
+            return;
+        }
+        var turningOn = current != true;
+        var confirmed = await ConfirmAsync(
+            turningOn ? "Turn on the FPS HUD" : "Turn off the FPS HUD",
+            $"This changes the '{bottle.Name}' bottle only; nothing else on the Mac is affected. " +
+            "Quit CrossOver and Steam completely first, then relaunch them, the HUD change " +
+            "only applies to programs started after it.",
+            turningOn ? "Turn On" : "Turn Off");
+        if (!confirmed)
+            return;
+        try
+        {
+            MetalHudService.SetEnabled(bottle, turningOn);
+            HudButton.Content = turningOn ? "FPS HUD: On" : "FPS HUD: Off";
+            Log(turningOn
+                ? "FPS HUD on for this bottle. Relaunch CrossOver and Steam, then start the game to see it."
+                : "FPS HUD off for this bottle. Relaunch CrossOver and Steam for it to disappear.");
+        }
+        catch (Exception ex)
+        {
+            Log($"ERROR: {ex.Message}");
+        }
+    }
 
     private void OnMoveUp(object? sender, RoutedEventArgs e) => MoveMod(sender, -1);
     private void OnMoveDown(object? sender, RoutedEventArgs e) => MoveMod(sender, +1);

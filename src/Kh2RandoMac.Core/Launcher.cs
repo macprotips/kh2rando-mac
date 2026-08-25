@@ -23,16 +23,26 @@ public static class Launcher
             return "Wrapper launched. Start the game from Steam inside it.";
         }
 
-        string target = config.Launcher == "Steam"
-            ? $"steam://rungameid/{SteamAppId}"
-            : Path.Combine(config.GameDir ?? throw new InvalidOperationException("Game folder not configured."),
-                GameLocator.Kh2ExeName);
+        var gameDir = config.GameDir
+            ?? throw new InvalidOperationException("Game folder not configured.");
+
+        // Launch KH2's exe directly, skipping the collection launcher. The Steam
+        // version needs steam_appid.txt next to the exes for a direct launch to
+        // work (Steam itself must be running in the bottle).
+        if (config.Launcher == "Steam")
+        {
+            var appIdFile = Path.Combine(gameDir, "steam_appid.txt");
+            if (!File.Exists(appIdFile))
+                File.WriteAllText(appIdFile, SteamAppId);
+        }
 
         var psi = new ProcessStartInfo(CrossOverApp.CxStart) { UseShellExecute = false };
         psi.ArgumentList.Add("--bottle");
         psi.ArgumentList.Add(bottle.Name);
-        psi.ArgumentList.Add(target);
+        psi.ArgumentList.Add(Path.Combine(gameDir, GameLocator.Kh2ExeName));
         Process.Start(psi);
-        return config.Launcher == "Steam" ? "Launch requested via Steam." : "Launching KH2 via CrossOver.";
+        return config.Launcher == "Steam"
+            ? "Launching KH2 directly. Keep Steam running in the bottle."
+            : "Launching KH2 via CrossOver.";
     }
 }

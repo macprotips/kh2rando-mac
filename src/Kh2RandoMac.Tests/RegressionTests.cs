@@ -288,4 +288,51 @@ public class SikarugirTests
         Assert.Equal(Path.Combine(wrapper, "Contents", "SharedSupport", "prefix"), bottle.Root);
         Directory.Delete(root, true);
     }
+
+    [Fact]
+    public void MetalHud_TogglesOnlyTheBottleConf()
+    {
+        using var fake = new FakeBottle();
+        var conf = Path.Combine(fake.Bottle.Root, "cxbottle.conf");
+        File.WriteAllText(conf, string.Join('\n', new[]
+        {
+            "[Bottle]",
+            "\"WineArch\" = \"win64\"",
+            "",
+            "[EnvironmentVariables]",
+            "\"WINEMSYNC\" = \"1\"",
+            ";;\"PROMPT\" = \"$p$g\"",
+            "",
+        }));
+
+        Assert.False(MetalHudService.IsEnabled(fake.Bottle));
+        MetalHudService.SetEnabled(fake.Bottle, true);
+        Assert.True(MetalHudService.IsEnabled(fake.Bottle));
+
+        var text = File.ReadAllText(conf);
+        Assert.Contains("\"WINEMSYNC\" = \"1\"", text);
+        Assert.Contains("\"MTL_HUD_ENABLED\" = \"1\"", text);
+        // The variable landed inside the section, before the trailing blank line.
+        Assert.True(text.IndexOf("MTL_HUD_ENABLED") > text.IndexOf("[EnvironmentVariables]"));
+
+        MetalHudService.SetEnabled(fake.Bottle, false);
+        Assert.False(MetalHudService.IsEnabled(fake.Bottle));
+        Assert.Contains("\"WINEMSYNC\" = \"1\"", File.ReadAllText(conf));
+        Assert.True(File.Exists(conf + ".kh2rando.bak"));
+    }
+
+    [Fact]
+    public void MetalHud_UnsupportedForSikarugir()
+    {
+        using var fake = new FakeBottle();
+        var wrapper = new Bottle
+        {
+            Name = "Wrapped",
+            Root = fake.Bottle.Root,
+            Platform = WinePlatform.Sikarugir,
+            WrapperApp = "/tmp/Wrapped.app",
+        };
+        Assert.Null(MetalHudService.IsEnabled(wrapper));
+    }
 }
+
