@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Tracker button: installs and opens the community KH2 item tracker
+  (Dee-Ayy/KH2Tracker) inside the game's bottle, with auto-tracking. The first
+  install also puts .NET Framework 4.8 into the bottle (one time, 15 to 30
+  minutes)
+- FPS HUD toggle: per-bottle Metal Performance HUD on or off
+- Build & Run now launches KH2 directly, skipping the collection launcher
+  (Steam version; Steam stays running in the bottle)
+
 ## 0.1.0 (2026-08-24)
 
 First release. Verified end to end on one machine (Apple Silicon, Steam version,

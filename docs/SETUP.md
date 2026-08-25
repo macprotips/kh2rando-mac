@@ -145,6 +145,18 @@ That is the whole routine from now on:
 
     generate a seed  ->  drag it in  ->  Build  ->  play
 
+## Optional: the item tracker
+
+Most randomizer players keep an item tracker open next to the game. The Tracker
+button opens the community [KH2 item tracker](https://github.com/Dee-Ayy/KH2Tracker)
+with auto-tracking: it marks off checks by itself as you pick things up.
+
+The first click installs it. That includes a one-time .NET Framework 4.8 install
+into the bottle, which takes 15 to 30 minutes; quit the game and Steam in CrossOver
+first, then leave it alone until the log says it is done. Every click after that
+opens the tracker in a few seconds, and it is fine to open it while the game is
+running.
+
 ## Troubleshooting
 
 - "Bottle appears to be running" during setup: something in the bottle is still

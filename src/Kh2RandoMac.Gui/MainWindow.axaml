@@ -76,7 +76,7 @@
     </Border>
 
     <!-- Action row: hint yields space first; controls always stay visible -->
-    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,10">
+    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,10">
       <TextBlock x:Name="OrderHint" Grid.Column="0"
                  Text="Mods at the top win conflicts. Build after any change."
                  VerticalAlignment="Center" Opacity="0.6" FontSize="12" Margin="0,0,12,0"
@@ -90,10 +90,13 @@
       <Button Grid.Column="3" Content="Seed Generator" Padding="14,8" Margin="0,0,8,0"
               Click="OnOpenSeedGenerator"
               ToolTip.Tip="Open the official KH2 Randomizer seed generator. If it is not installed yet, this installs it first (a few minutes)."/>
-      <Button x:Name="BuildButton" Grid.Column="4" Content="Build" FontWeight="SemiBold"
+      <Button x:Name="TrackerButton" Grid.Column="4" Content="Tracker" Padding="14,8" Margin="0,0,8,0"
+              Click="OnTracker"
+              ToolTip.Tip="Open the KH2 item tracker next to the game, with auto-tracking. The first click installs it, which takes 15 to 30 minutes once; quit Steam and the game first."/>
+      <Button x:Name="BuildButton" Grid.Column="5" Content="Build" FontWeight="SemiBold"
               Padding="18,8" Margin="0,0,8,0" Click="OnBuild"
               ToolTip.Tip="Compile the enabled mods into the folder the game reads. Do this after any change: new seed, toggled mod, reordered list."/>
-      <Button x:Name="RunButton" Grid.Column="5" Content="Build &amp; Run" FontWeight="SemiBold"
+      <Button x:Name="RunButton" Grid.Column="6" Content="Build &amp; Run" FontWeight="SemiBold"
               Padding="18,8" Click="OnBuildRun"
               ToolTip.Tip="Build, then launch KH2 directly, skipping the collection launcher. Keep Steam open in the bottle."/>
     </Grid>

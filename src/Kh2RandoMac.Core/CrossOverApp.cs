@@ -28,6 +28,8 @@ public static class CrossOverApp
 
     public static string CxStart => Bin("cxstart");
 
+    public static string Wine => Bin("wine");
+
     private static readonly Lazy<string> _bottlesRoot = new(() =>
     {
         var custom = ReadDefault("com.codeweavers.CrossOver", "BottleDir");

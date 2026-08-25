@@ -19,6 +19,7 @@ try
         "build" => Build(),
         "run" => Run(),
         "movies" => Movies(rest),
+        "tracker" => await Tracker(),
         "reset" => Reset(),
         "panacea" => await Panacea(rest),
         "luabackend" => await LuaBackend(rest),
@@ -67,6 +68,8 @@ static int Help()
           run                       Launch KH 1.5+2.5 through CrossOver
           movies [skip|restore]     Skip KH2 movie cutscenes (they crash the game under
                                     CrossOver) or restore them
+          tracker                   Open the KH2 item tracker next to the game
+                                    (first run installs it, 15-30 min once)
           panacea install|remove    Manage the in-game mod loader DLLs
           luabackend install|remove Manage LuaBackend (Lua script support)
           overrides                 Re-apply the bottle DLL overrides
@@ -307,6 +310,20 @@ static int Movies(string[] rest)
                 "(use 'kh2rando movies skip|restore')");
             break;
     }
+    return 0;
+}
+
+static async Task<int> Tracker()
+{
+    var (config, workspace) = LoadConfigured();
+    var bottle = Bottle.Resolve(config);
+    if (!TrackerService.IsInstalled(workspace, bottle))
+    {
+        Say("Tracker not installed yet; installing. The one-time .NET Framework step");
+        Say("takes 15 to 30 minutes. Quit the game and Steam in CrossOver first.");
+        await new TrackerService().EnsureInstalled(workspace, bottle, Say);
+    }
+    Say(TrackerService.Launch(workspace, bottle));
     return 0;
 }
 

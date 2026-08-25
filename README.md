@@ -68,6 +68,12 @@ The detailed version with checkpoints and troubleshooting is the
 Playing a new seed after that: generate, drag the zip in, Build, play. Build again
 after any mod change.
 
+Optional: the Tracker button opens the community
+[KH2 item tracker](https://github.com/Dee-Ayy/KH2Tracker) next to the game, with
+auto-tracking. The first click installs it, which includes a one-time .NET
+Framework install into the bottle and takes 15 to 30 minutes; quit Steam and the
+game first. After that it opens instantly.
+
 There is also a command line version (`kh2rando`); run `kh2rando help` for the
 commands. Diagnostics are written to `~/Library/Logs/kh2rando-mac.log`. Attach that
 file to bug reports.
@@ -119,8 +125,8 @@ Manager this tool replaces.
 
 Special thanks to TopazTK and Sirius902 for LuaBackend, tommadness and the KH2 Rando
 community for the randomizer and seed generator, Num for the Garden of Assemblage ROM
-Edition mod, and KHOmega for the Linux setup guides whose Wine recipes this port
-adapts to CrossOver.
+Edition mod, Dee-Ayy for the KH2 item tracker, and KHOmega for the Linux setup guides
+whose Wine recipes this port adapts to CrossOver.
 
 The seed generator installer script uses pyinstxtractor by extremecoders-re.
 

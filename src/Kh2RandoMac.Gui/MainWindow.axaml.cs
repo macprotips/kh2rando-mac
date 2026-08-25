@@ -474,6 +474,49 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void OnTracker(object? sender, RoutedEventArgs e)
+    {
+        if (_busy)
+            return;
+        Bottle bottle;
+        try
+        {
+            bottle = Bottle.Resolve(_config);
+        }
+        catch
+        {
+            Log("Run Setup first; the tracker runs inside the game's bottle.");
+            return;
+        }
+        if (bottle.Platform != WinePlatform.CrossOver)
+        {
+            Log("The tracker currently works with CrossOver bottles only.");
+            return;
+        }
+
+        if (TrackerService.IsInstalled(_workspace, bottle))
+        {
+            await RunTask("Launch tracker", () => Task.Run(() =>
+                Log(TrackerService.Launch(_workspace, bottle))));
+            return;
+        }
+
+        var confirmed = await ConfirmAsync(
+            "Install the item tracker",
+            "This downloads the community KH2 tracker (Dee-Ayy/KH2Tracker) and installs " +
+            $".NET Framework 4.8 into the '{bottle.Name}' bottle, which the tracker needs to run. " +
+            "The .NET install happens once and takes 15 to 30 minutes. " +
+            "Quit the game and Steam in CrossOver before continuing.",
+            "Install");
+        if (!confirmed)
+            return;
+        await RunTask("Install tracker", async () =>
+        {
+            await new TrackerService().EnsureInstalled(_workspace, bottle, Log);
+            Log(TrackerService.Launch(_workspace, bottle));
+        });
+    }
+
     private void OnMoveUp(object? sender, RoutedEventArgs e) => MoveMod(sender, -1);
     private void OnMoveDown(object? sender, RoutedEventArgs e) => MoveMod(sender, +1);
 
