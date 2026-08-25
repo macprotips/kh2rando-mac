@@ -98,7 +98,7 @@
               ToolTip.Tip="Compile the enabled mods into the folder the game reads. Do this after any change: new seed, toggled mod, reordered list."/>
       <Button x:Name="RunButton" Grid.Column="6" Content="Build &amp; Run" FontWeight="SemiBold"
               Padding="18,8" Click="OnBuildRun"
-              ToolTip.Tip="Build, then launch KH2 directly, skipping the collection launcher. Keep Steam open in the bottle."/>
+              ToolTip.Tip="Build, then launch the game through CrossOver."/>
     </Grid>
 
     <!-- Log -->
