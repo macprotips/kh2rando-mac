@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-08-25)
 
 - Tracker button: installs and opens the community KH2 item tracker
   (Dee-Ayy/KH2Tracker) inside the game's bottle, with auto-tracking. The first
