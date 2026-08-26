@@ -831,9 +831,10 @@ public partial class MainWindow : Window
         var conflicts = RefinedService.ConflictingEnabledMods(_workspace);
         if (conflicts.Count > 0)
         {
-            Log("WARNING: Re:Fined and other gameplay mods are enabled together:");
-            Log("  " + string.Join(", ", conflicts));
-            Log("Re:Fined and the randomizer do not mix. Enable one or the other, then Build.");
+            Log("Note: Re:Fined and the randomizer are enabled together. This combo is common");
+            Log("(soft reset, skippable cutscenes) and works; place Re:Fined between your seed");
+            Log("and GoA. Known quirk: seeds with 'Remove Port Royal Map Select' get glitchy");
+            Log("Port Royal menus under Re:Fined.");
         }
 
         Bottle bottle;

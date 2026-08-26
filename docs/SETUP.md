@@ -165,12 +165,12 @@ half-finished.
 In the tracker, turn on auto-tracking from its Options menu once the game is
 running.
 
-## Optional: Re:Fined instead of the randomizer
+## Optional: Re:Fined
 
 [Re:Fined](https://github.com/KH-ReFined/KH-ReFined) is a quality-of-life overhaul
-for playing KH2 normally: skippable cutscenes, faster menus, and much more. It is a
-different way to play than the randomizer, not an addition to it: the two rewrite
-the same game systems and do not run together.
+for KH2: skippable cutscenes, soft reset, faster menus, and much more. It can be
+played two ways: on its own for a normal playthrough, or added to a randomizer
+setup for its quality-of-life features.
 
 1. Click the Mode button (bottom left, it says "Mode: Randomizer"). The first
    switch offers to download Re:Fined; it is a large download.
@@ -184,6 +184,12 @@ the same game systems and do not run together.
 Click the Mode button again to go back: your randomizer mods return exactly as
 they were; click Build to apply. Keep separate save slots for the two modes;
 their saves are not interchangeable.
+
+To use Re:Fined's quality-of-life features inside a randomizer run instead, stay
+in Randomizer mode and tick Re:Fined in the mod list too, placed between your
+seed and GoA. This combo is common and works. One known quirk: seeds generated
+with "Remove Port Royal Map Select" get glitchy Port Royal menus under Re:Fined,
+so leave that seed option off when combining them.
 
 Add-on packs (voice packs, vanilla music) install the same way from the
 [Re:Fined project page](https://github.com/KH-ReFined/KH-ReFined#additional-content);

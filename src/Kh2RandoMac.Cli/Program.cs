@@ -394,8 +394,9 @@ static int Build()
         var conflicts = RefinedService.ConflictingEnabledMods(workspace);
         if (conflicts.Count > 0)
         {
-            Say("WARNING: Re:Fined and other gameplay mods are enabled together: " + string.Join(", ", conflicts));
-            Say("Re:Fined and the randomizer do not mix. Enable one or the other, then build.");
+            Say("Note: Re:Fined and the randomizer are enabled together. This combo works;");
+            Say("place Re:Fined between your seed and GoA. Known quirk: seeds with 'Remove");
+            Say("Port Royal Map Select' get glitchy Port Royal menus under Re:Fined.");
         }
         var bottle = Bottle.Resolve(config);
         if (bottle.Platform == WinePlatform.CrossOver && !RefinedService.HasDesktopRuntime(bottle))
