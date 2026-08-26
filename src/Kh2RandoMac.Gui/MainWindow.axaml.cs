@@ -158,12 +158,12 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>One status row: a colored glyph and a short plain-words phrase.</summary>
+    /// <summary>One status row: a colored badge glyph and a short plain-words phrase.</summary>
     private record StatusRow(string Glyph, string Color, string Text)
     {
         public static StatusRow Ok(string text) => new("✓", "#66BB6A", text);
-        public static StatusRow Warn(string text) => new("⚠", "#FFB74D", text);
-        public static StatusRow Idle(string text) => new("○", "#9E9E9E", text);
+        public static StatusRow Warn(string text) => new("!", "#FFB74D", text);
+        public static StatusRow Idle(string text) => new("–", "#9E9E9E", text);
     }
 
     private record StatusSnapshot(
@@ -225,9 +225,9 @@ public partial class MainWindow : Window
         _workspace = snapshot.workspace;
         var status = snapshot.Item3;
 
-        PaintStatusRow(GameStatusIcon, GameStatusText, status.Game);
-        PaintStatusRow(LoaderStatusIcon, LoaderStatusText, status.Loader);
-        PaintStatusRow(DataStatusIcon, DataStatusText, status.Data);
+        PaintStatusRow(GameStatusBadge, GameStatusIcon, GameStatusText, status.Game);
+        PaintStatusRow(LoaderStatusBadge, LoaderStatusIcon, LoaderStatusText, status.Loader);
+        PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
@@ -254,10 +254,12 @@ public partial class MainWindow : Window
         _refreshing = false;
     }
 
-    private static void PaintStatusRow(TextBlock icon, TextBlock text, StatusRow row)
+    private static void PaintStatusRow(Border badge, TextBlock icon, TextBlock text, StatusRow row)
     {
+        var color = Avalonia.Media.Color.Parse(row.Color);
+        badge.Background = new Avalonia.Media.SolidColorBrush(color, 0.22);
         icon.Text = row.Glyph;
-        icon.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(row.Color));
+        icon.Foreground = new Avalonia.Media.SolidColorBrush(color);
         text.Text = row.Text;
     }
 
