@@ -158,8 +158,16 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>One status row: a colored glyph and a short plain-words phrase.</summary>
+    private record StatusRow(string Glyph, string Color, string Text)
+    {
+        public static StatusRow Ok(string text) => new("✓", "#66BB6A", text);
+        public static StatusRow Warn(string text) => new("⚠", "#FFB74D", text);
+        public static StatusRow Idle(string text) => new("○", "#9E9E9E", text);
+    }
+
     private record StatusSnapshot(
-        string GameStatus, string LoaderStatus, string DataStatus, List<ModInfo> Mods,
+        StatusRow Game, string? GamePath, StatusRow Loader, StatusRow Data, List<ModInfo> Mods,
         bool? MoviesSkipped, bool? HudEnabled);
 
     /// <summary>Gathers state off the UI thread (filesystem scans can block on slow drives), then paints.</summary>
@@ -171,22 +179,34 @@ public partial class MainWindow : Window
             var workspace = new Workspace(config.WorkspaceRoot);
 
             var gameOk = config.GameDir != null && GameLocator.IsGameDir(config.GameDir);
-            var gameStatus = config.GameDir == null
-                ? "Game: not set up yet, click Run Setup (game must be installed in CrossOver or Sikarugir first)"
+            var gameRow = config.GameDir == null
+                ? StatusRow.Idle("Not set up yet. Install the game in CrossOver, then click Run Setup.")
                 : gameOk
-                    ? $"Game: {config.GameDir}  ({config.Launcher}, bottle '{config.BottleName}')"
-                    : $"Game: {config.GameDir}, NOT REACHABLE (drive unplugged?)";
+                    ? StatusRow.Ok($"Found ({config.Launcher}, bottle '{config.BottleName}')")
+                    : StatusRow.Warn("Game drive not connected. Plug it in and click Refresh.");
 
-            var loaderStatus = config.GameDir != null && gameOk
-                ? $"Mod loader: Panacea {(PanaceaService.IsInstalled(config.GameDir) ? "installed" : "MISSING")}, " +
-                  $"LuaBackend {(LuaBackendService.IsInstalled(config.GameDir) ? "installed" : "MISSING")}"
-                : "Mod loader: (waiting for setup)";
+            StatusRow loaderRow;
+            if (config.GameDir == null)
+                loaderRow = StatusRow.Idle("Installed by Run Setup.");
+            else if (!gameOk)
+                loaderRow = StatusRow.Idle("Can't check while the game drive is unplugged.");
+            else
+            {
+                var missing = new List<string>();
+                if (!PanaceaService.IsInstalled(config.GameDir))
+                    missing.Add("Panacea");
+                if (!LuaBackendService.IsInstalled(config.GameDir))
+                    missing.Add("LuaBackend");
+                loaderRow = missing.Count == 0
+                    ? StatusRow.Ok("Panacea and LuaBackend installed.")
+                    : StatusRow.Warn($"{string.Join(" and ", missing)} missing. Click Run Setup to reinstall.");
+            }
 
-            var dataStatus = !ExtractionService.LooksExtracted(workspace.DataDir)
-                ? "Game data: not extracted yet, click Extract Game Data after setup"
+            var dataRow = !ExtractionService.LooksExtracted(workspace.DataDir)
+                ? StatusRow.Idle("Not extracted yet. Click Extract Game Data after setup.")
                 : gameOk && ExtractionService.IsExtractionStale(config.GameDir!, config.Language, workspace.DataDir)
-                    ? "Game data: STALE (the game was updated). Run Extract Game Data again, then Build."
-                    : "Game data: extracted ✓";
+                    ? StatusRow.Warn("Out of date after a game update. Run Extract Game Data, then Build.")
+                    : StatusRow.Ok("Extracted.");
 
             var mods = new ModsService(workspace).List();
             bool? moviesSkipped = null;
@@ -197,17 +217,19 @@ public partial class MainWindow : Window
             }
             bool? hudEnabled = null;
             try { hudEnabled = MetalHudService.IsEnabled(Bottle.Resolve(config)); } catch { }
-            return (config, workspace, new StatusSnapshot(gameStatus, loaderStatus, dataStatus, mods, moviesSkipped,
-                hudEnabled));
+            return (config, workspace, new StatusSnapshot(gameRow, config.GameDir, loaderRow, dataRow, mods,
+                moviesSkipped, hudEnabled));
         });
 
         _config = snapshot.config;
         _workspace = snapshot.workspace;
         var status = snapshot.Item3;
 
-        GameStatusText.Text = status.GameStatus;
-        LoaderStatusText.Text = status.LoaderStatus;
-        DataStatusText.Text = status.DataStatus;
+        PaintStatusRow(GameStatusIcon, GameStatusText, status.Game);
+        PaintStatusRow(LoaderStatusIcon, LoaderStatusText, status.Loader);
+        PaintStatusRow(DataStatusIcon, DataStatusText, status.Data);
+        GamePathText.Text = status.GamePath ?? "";
+        GamePathText.IsVisible = status.GamePath != null;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
         MoviesButton.IsEnabled = status.MoviesSkipped != null && !_busy;
         HudButton.Content = status.HudEnabled == true ? "FPS HUD: On" : "FPS HUD: Off";
@@ -230,6 +252,13 @@ public partial class MainWindow : Window
             _mods.Add(row);
         }
         _refreshing = false;
+    }
+
+    private static void PaintStatusRow(TextBlock icon, TextBlock text, StatusRow row)
+    {
+        icon.Text = row.Glyph;
+        icon.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(row.Color));
+        text.Text = row.Text;
     }
 
     /// <summary>Persist checkbox states + current display order into mods-KH2.txt.</summary>
