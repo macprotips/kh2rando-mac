@@ -157,6 +157,14 @@ first, then leave it alone until the log says it is done. Every click after that
 opens the tracker in a few seconds, and it is fine to open it while the game is
 running.
 
+If the tracker crashes on startup instead of opening, click Tracker again: the app
+offers a Repair that reinstalls the bottle's .NET Framework cleanly (same 15 to 30
+minutes, quit Steam first). This fixes bottles where an earlier install was left
+half-finished.
+
+In the tracker, turn on auto-tracking from its Options menu once the game is
+running.
+
 ## Troubleshooting
 
 - "Bottle appears to be running" during setup: something in the bottle is still
@@ -179,10 +187,11 @@ running.
 - The app will not open ("damaged" or "unidentified developer"): official releases
   are notarized, so re-download from the releases page. If you built from source
   yourself, right-click the app and choose Open, then Open again. Needed once.
-- Anything else: the app writes a log to `~/Library/Logs/kh2rando-mac.log`. Attach
-  it to your bug report along with what the in-app log panel said. For randomizer
-  gameplay questions (rules, hints, strategies), the
-  [KH2FM Rando Discord](https://discord.gg/kh2fmrando) is where the players are.
+- Anything else: click the Log button in the app. It opens Finder with the app's
+  log file highlighted; attach that file to your bug report along with what the
+  in-app log panel said. For randomizer gameplay questions (rules, hints,
+  strategies), the [KH2FM Rando Discord](https://discord.gg/kh2fmrando) is where
+  the players are.
 
 Re-running Setup is always safe; the bottle registry is backed up
 (`user.reg.kh2rando.bak` in the bottle folder) before it is touched.

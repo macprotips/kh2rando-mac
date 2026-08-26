@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         FileLog.Write($"[gui] KH2 Rando Manager build {AppInfo.Build} started");
+        VersionText.Text = $"Version {AppInfo.Build}";
         _workspace = new Workspace(_config.WorkspaceRoot);
         _workspace.EnsureDirectories();
         ModList.ItemsSource = _mods;

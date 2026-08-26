@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.1 (2026-08-25)
+
+Tracker fixes proven on a second machine, plus easier bug reporting.
+
+- Tracker install now works across CrossOver versions: the removal of Wine's
+  .NET substitute handles output differences between versions, installed-state
+  detection can no longer be fooled by substitute files, and the bottle is
+  pinned to the real .NET Framework so the tracker keeps working after
+  CrossOver updates
+- Repair path: if the tracker crashes on startup, the next click offers a full
+  clean reinstall of the bottle's .NET Framework
+- Tracker button shows a launching state until the tracker window is actually
+  on screen
+- Log button: opens Finder with the app's log file highlighted for bug reports;
+  a tracker startup crash does this automatically
+- The app records its version and tracker diagnostics in the log, and the
+  version is shown in the main window
+
 ## 0.2.0 (2026-08-25)
 
 - Tracker button: installs and opens the community KH2 item tracker

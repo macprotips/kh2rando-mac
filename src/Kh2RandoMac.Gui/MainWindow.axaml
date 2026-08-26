@@ -5,7 +5,7 @@
         Width="900" Height="660"
         MinWidth="760" MinHeight="500">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="14">
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="14">
 
     <!-- Status header -->
     <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="8" Padding="12" Margin="0,0,0,10">
@@ -99,7 +99,7 @@
               Padding="18,8" Margin="0,0,8,0" Click="OnBuild"
               ToolTip.Tip="Compile the enabled mods into the folder the game reads. Do this after any change: new seed, toggled mod, reordered list."/>
       <Button x:Name="RunButton" Grid.Column="6" Content="Build &amp; Run" FontWeight="SemiBold"
-              Padding="18,8" Click="OnBuildRun"
+              Classes="accent" Padding="18,8" Click="OnBuildRun"
               ToolTip.Tip="Build, then launch the game through CrossOver."/>
     </Grid>
 
@@ -110,5 +110,8 @@
                    TextWrapping="Wrap" Text="Ready."/>
       </ScrollViewer>
     </Border>
+
+    <TextBlock x:Name="VersionText" Grid.Row="5" HorizontalAlignment="Right"
+               Margin="0,6,2,0" FontSize="11" Opacity="0.4"/>
   </Grid>
 </Window>
