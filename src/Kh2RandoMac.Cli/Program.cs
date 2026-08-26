@@ -323,6 +323,11 @@ static async Task<int> Tracker()
         Say("takes 15 to 30 minutes. Quit the game and Steam in CrossOver first.");
         await new TrackerService().EnsureInstalled(workspace, bottle, Say);
     }
+    if (TrackerService.NeedsRuntimePin(bottle))
+    {
+        TrackerService.PinRuntime(bottle);
+        Say("One-time fix applied: bottle pinned to the real .NET Framework.");
+    }
     var proc = TrackerService.Launch(workspace, bottle);
     Say("Tracker starting...");
     if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))

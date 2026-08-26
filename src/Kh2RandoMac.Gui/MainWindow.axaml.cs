@@ -501,6 +501,19 @@ public partial class MainWindow : Window
 
         if (TrackerService.IsInstalled(_workspace, bottle))
         {
+            if (TrackerService.NeedsRuntimePin(bottle))
+            {
+                try
+                {
+                    TrackerService.PinRuntime(bottle);
+                    Log("One-time fix applied: bottle pinned to the real .NET Framework.");
+                }
+                catch (Exception ex)
+                {
+                    Log($"ERROR: {ex.Message}");
+                    return;
+                }
+            }
             await LaunchTrackerWithSpinner(bottle);
             return;
         }

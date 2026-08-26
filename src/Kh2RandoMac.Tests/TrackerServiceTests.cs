@@ -78,6 +78,16 @@ public class TrackerServiceTests
         Assert.True(TrackerService.HasDotNet48(fake.Bottle));
     }
 
+    [Fact]
+    public void NeedsRuntimePin_UntilMscoreeOverrideSet()
+    {
+        using var fake = new FakeBottle();
+        Assert.True(TrackerService.NeedsRuntimePin(fake.Bottle));
+
+        TrackerService.PinRuntime(fake.Bottle);
+        Assert.False(TrackerService.NeedsRuntimePin(fake.Bottle));
+    }
+
     /// <summary>The real clr.dll is about 11 MB; the detector requires more than 5 MB.</summary>
     private static void WriteFullSizeClr(string frameworkDir)
     {

@@ -44,9 +44,24 @@ public class TrackerService
             "Framework64", "v4.0.30319");
         var clr = new FileInfo(Path.Combine(framework, "clr.dll"));
         var wpf = File.Exists(Path.Combine(framework, "WPF", "wpfgfx_v0400.dll"));
+        bottle.GetDllOverrides().TryGetValue("mscoree", out var mscoree);
         FileLog.Write($"[tracker] detection: wpfgfx={wpf} clr={(clr.Exists ? clr.Length : 0)} " +
-            $"verdict={HasDotNet48(bottle)} bottle={bottle.Name}");
+            $"verdict={HasDotNet48(bottle)} mscoree={mscoree ?? "unset"} bottle={bottle.Name}");
     }
+
+    /// <summary>
+    /// Whether the bottle still needs pinning to the real framework. Wine prefers its
+    /// mono substitute over an installed real .NET unless mscoree is overridden, and
+    /// the substitute cannot render the tracker. Field-proven: a bottle can have the
+    /// real framework installed and still crash exactly like a bottle without it.
+    /// </summary>
+    public static bool NeedsRuntimePin(Bottle bottle) =>
+        !bottle.GetDllOverrides().TryGetValue("mscoree", out var mode) ||
+        !mode.Contains("native");
+
+    /// <summary>Pin the bottle to the real framework. Refuses while the bottle runs.</summary>
+    public static void PinRuntime(Bottle bottle) =>
+        bottle.EnsureDllOverrides(new[] { "mscoree" });
 
     public static bool IsInstalled(Workspace workspace, Bottle bottle) =>
         File.Exists(ExePath(workspace)) && HasDotNet48(bottle);
@@ -145,7 +160,7 @@ public class TrackerService
         // the registry edit refuses while it runs; give it a moment.
         for (var i = 0; i < 30 && bottle.IsRunning(); i++)
             await Task.Delay(1000);
-        bottle.EnsureDllOverrides(new[] { "mscoree" });
+        PinRuntime(bottle);
         log("Bottle pinned to the real .NET Framework.");
     }
 
