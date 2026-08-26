@@ -76,7 +76,7 @@ game first. After that it opens instantly.
 
 The Manager also supports [Re:Fined](https://github.com/KH-ReFined/KH-ReFined),
 the quality-of-life overhaul, either on its own or added to a randomizer
-setup; see the [Setup Guide](docs/SETUP.md#optional-refined-instead-of-the-randomizer).
+setup; see the [Setup Guide](docs/SETUP.md#optional-refined).
 
 There is also a command line version (`kh2rando`); run `kh2rando help` for the
 commands. Diagnostics are written to `~/Library/Logs/kh2rando-mac.log`. Attach that
