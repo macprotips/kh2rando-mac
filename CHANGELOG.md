@@ -2,7 +2,13 @@
 
 ## 0.2.1 (2026-08-25)
 
-Tracker fixes proven on a second machine, plus easier bug reporting.
+Tracker fixes proven on a second machine, a fix for texture and model mods,
+and easier bug reporting.
+
+- Fixed texture and model mods only partially applying: mod definitions written
+  on Windows mix backslash and forward-slash paths, and the backslash entries
+  were silently skipped on macOS. All asset paths are now normalized before
+  building. (Found via the Roxas mod, where text changed but models did not.)
 
 - Tracker install now works across CrossOver versions: the removal of Wine's
   .NET substitute handles output differences between versions, installed-state

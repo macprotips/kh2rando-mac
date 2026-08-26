@@ -56,6 +56,7 @@ public class PatchBuilder
         {
             var mod = mods[i];
             progress?.Invoke($"Building {mod.Metadata!.Title ?? mod.Name}...");
+            NormalizePathSeparators(mod.Metadata.Assets);
             patcher.Patch(
                 _workspace.GameDataDir,
                 _workspace.CompiledModDir,
@@ -75,5 +76,29 @@ public class PatchBuilder
             writer.WriteLine(entry.Key + " $$$$ " + entry.Value);
 
         progress?.Invoke($"Build complete: {mods.Count} mod(s) → {_workspace.CompiledModDir}");
+    }
+
+    /// <summary>
+    /// Mod definitions written on Windows use backslash paths (obj\FILE.mdlx); many mix
+    /// them with forward slashes in the same file. Windows treats both as separators,
+    /// macOS treats a backslash as an ordinary character, so those assets quietly fail
+    /// to resolve and the patcher skips them. Normalize every asset path up front.
+    /// </summary>
+    public static void NormalizePathSeparators(List<OpenKh.Patcher.AssetFile>? assets)
+    {
+        if (assets == null)
+            return;
+        foreach (var asset in assets)
+        {
+            if (asset == null)
+                continue;
+            if (asset.Name != null)
+                asset.Name = asset.Name.Replace('\\', '/');
+            if (asset.Multi != null)
+                foreach (var multi in asset.Multi)
+                    if (multi?.Name != null)
+                        multi.Name = multi.Name.Replace('\\', '/');
+            NormalizePathSeparators(asset.Source);
+        }
     }
 }
