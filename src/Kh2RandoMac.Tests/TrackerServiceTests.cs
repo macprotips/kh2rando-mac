@@ -56,17 +56,20 @@ public class TrackerServiceTests
     }
 
     [Fact]
-    public void HasDotNet48_RequiresClrDll_NotJustTheFolder()
+    public void HasDotNet48_RequiresWpfRenderer_NotJustCoreFiles()
     {
         using var fake = new FakeBottle();
-        // Wine's mono stub creates the folder and a few files, but never clr.dll.
+        // Newer Wine mono substitutes ship core files, clr.dll included (seen in the
+        // field), but never WPF's native renderer; only the real install has it.
         var frameworkDir = Path.Combine(fake.Bottle.DriveC,
             "windows", "Microsoft.NET", "Framework64", "v4.0.30319");
         Directory.CreateDirectory(frameworkDir);
         File.WriteAllText(Path.Combine(frameworkDir, "mscorlib.dll"), "stub");
+        File.WriteAllText(Path.Combine(frameworkDir, "clr.dll"), "stub");
         Assert.False(TrackerService.HasDotNet48(fake.Bottle));
 
-        File.WriteAllText(Path.Combine(frameworkDir, "clr.dll"), "real");
+        Directory.CreateDirectory(Path.Combine(frameworkDir, "WPF"));
+        File.WriteAllText(Path.Combine(frameworkDir, "WPF", "wpfgfx_v0400.dll"), "real");
         Assert.True(TrackerService.HasDotNet48(fake.Bottle));
     }
 

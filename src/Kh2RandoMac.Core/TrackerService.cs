@@ -22,12 +22,14 @@ public class TrackerService
     public static string ExePath(Workspace workspace) => Path.Combine(TrackerDir(workspace), ExeName);
 
     /// <summary>
-    /// Whether the real .NET Framework 4.8 is present in the bottle. Wine's stub ships
-    /// a handful of files but never clr.dll, the actual runtime, so that is the marker.
+    /// Whether the real .NET Framework 4.8 is present in the bottle. The marker is
+    /// WPF's native renderer, which the tracker needs to draw its window: Wine's mono
+    /// substitute mimics much of .NET (newer versions even ship a clr.dll, which burned
+    /// us as a marker once) but has no WPF at all.
     /// </summary>
     public static bool HasDotNet48(Bottle bottle) =>
         File.Exists(Path.Combine(bottle.DriveC, "windows", "Microsoft.NET",
-            "Framework64", "v4.0.30319", "clr.dll"));
+            "Framework64", "v4.0.30319", "WPF", "wpfgfx_v0400.dll"));
 
     public static bool IsInstalled(Workspace workspace, Bottle bottle) =>
         File.Exists(ExePath(workspace)) && HasDotNet48(bottle);
@@ -275,7 +277,9 @@ public class TrackerService
         FileLog.Write($"[tracker] wine {args.FirstOrDefault()} exit={p.ExitCode} stderr: {tail.Trim()}");
         if (!quiet)
             log(output.Trim());
-        return output;
+        // Some CrossOver versions print command output on stderr (seen with
+        // uninstaller --list); parsers get both streams.
+        return output + "\n" + stderr;
     }
 
     /// <summary>Run a Windows exe (by mac path) in the bottle and wait; returns its exit code.</summary>
