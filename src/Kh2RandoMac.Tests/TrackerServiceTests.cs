@@ -85,10 +85,10 @@ public class TrackerServiceTests
         File.WriteAllText(TrackerService.ExePath(workspace), "exe");
         Assert.False(TrackerService.IsInstalled(workspace, fake.Bottle));
 
-        var frameworkDir = Path.Combine(fake.Bottle.DriveC,
-            "windows", "Microsoft.NET", "Framework64", "v4.0.30319");
-        Directory.CreateDirectory(frameworkDir);
-        File.WriteAllText(Path.Combine(frameworkDir, "clr.dll"), "real");
+        var wpfDir = Path.Combine(fake.Bottle.DriveC,
+            "windows", "Microsoft.NET", "Framework64", "v4.0.30319", "WPF");
+        Directory.CreateDirectory(wpfDir);
+        File.WriteAllText(Path.Combine(wpfDir, "wpfgfx_v0400.dll"), "real");
         Assert.True(TrackerService.IsInstalled(workspace, fake.Bottle));
     }
 }
