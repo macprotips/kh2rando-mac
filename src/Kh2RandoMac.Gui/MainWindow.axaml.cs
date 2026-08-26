@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        FileLog.Write($"[gui] KH2 Rando Manager build {AppInfo.Build} started");
         _workspace = new Workspace(_config.WorkspaceRoot);
         _workspace.EnsureDirectories();
         ModList.ItemsSource = _mods;
@@ -496,6 +497,7 @@ public partial class MainWindow : Window
             Log("The tracker currently works with CrossOver bottles only.");
             return;
         }
+        TrackerService.LogDotNetState(bottle);
 
         if (TrackerService.IsInstalled(_workspace, bottle))
         {

@@ -22,14 +22,31 @@ public class TrackerService
     public static string ExePath(Workspace workspace) => Path.Combine(TrackerDir(workspace), ExeName);
 
     /// <summary>
-    /// Whether the real .NET Framework 4.8 is present in the bottle. The marker is
-    /// WPF's native renderer, which the tracker needs to draw its window: Wine's mono
-    /// substitute mimics much of .NET (newer versions even ship a clr.dll, which burned
-    /// us as a marker once) but has no WPF at all.
+    /// Whether the real .NET Framework 4.8 is present in the bottle. Wine's mono
+    /// substitute mimics much of .NET, and newer versions even ship a clr.dll, which
+    /// burned us as a marker once. Require what only the real install has: WPF's
+    /// native renderer (mono has no WPF, and the tracker needs it to draw anything)
+    /// and a full-size clr.dll (the real one is about 11 MB; shims are small).
     /// </summary>
-    public static bool HasDotNet48(Bottle bottle) =>
-        File.Exists(Path.Combine(bottle.DriveC, "windows", "Microsoft.NET",
-            "Framework64", "v4.0.30319", "WPF", "wpfgfx_v0400.dll"));
+    public static bool HasDotNet48(Bottle bottle)
+    {
+        var framework = Path.Combine(bottle.DriveC, "windows", "Microsoft.NET",
+            "Framework64", "v4.0.30319");
+        var clr = new FileInfo(Path.Combine(framework, "clr.dll"));
+        return File.Exists(Path.Combine(framework, "WPF", "wpfgfx_v0400.dll"))
+            && clr.Exists && clr.Length > 5_000_000;
+    }
+
+    /// <summary>One log line of the raw facts HasDotNet48 decides on, for field logs.</summary>
+    public static void LogDotNetState(Bottle bottle)
+    {
+        var framework = Path.Combine(bottle.DriveC, "windows", "Microsoft.NET",
+            "Framework64", "v4.0.30319");
+        var clr = new FileInfo(Path.Combine(framework, "clr.dll"));
+        var wpf = File.Exists(Path.Combine(framework, "WPF", "wpfgfx_v0400.dll"));
+        FileLog.Write($"[tracker] detection: wpfgfx={wpf} clr={(clr.Exists ? clr.Length : 0)} " +
+            $"verdict={HasDotNet48(bottle)} bottle={bottle.Name}");
+    }
 
     public static bool IsInstalled(Workspace workspace, Bottle bottle) =>
         File.Exists(ExePath(workspace)) && HasDotNet48(bottle);
@@ -120,6 +137,16 @@ public class TrackerService
                 $"Installer verdict: {ReadSetupLogSummary(bottle) ?? "no setup log found"}. " +
                 "Try clicking Tracker again; the install is safe to retry.");
         log(".NET Framework 4.8 installed.");
+
+        // Wine's builtin mscoree prefers its mono substitute when present; a later
+        // CrossOver update can quietly reinstall mono into the bottle, which would
+        // put the tracker back on the runtime that cannot render it. Pin the bottle
+        // to the real framework. The installer's wineserver can linger briefly, and
+        // the registry edit refuses while it runs; give it a moment.
+        for (var i = 0; i < 30 && bottle.IsRunning(); i++)
+            await Task.Delay(1000);
+        bottle.EnsureDllOverrides(new[] { "mscoree" });
+        log("Bottle pinned to the real .NET Framework.");
     }
 
     /// <summary>Names Wine's .NET substitute goes by across Wine and CrossOver versions.</summary>

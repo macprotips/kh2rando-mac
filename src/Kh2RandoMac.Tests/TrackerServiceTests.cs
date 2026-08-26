@@ -68,9 +68,21 @@ public class TrackerServiceTests
         File.WriteAllText(Path.Combine(frameworkDir, "clr.dll"), "stub");
         Assert.False(TrackerService.HasDotNet48(fake.Bottle));
 
+        // A mono substitute could even ship the renderer file name; a shim-sized
+        // clr.dll must still fail.
         Directory.CreateDirectory(Path.Combine(frameworkDir, "WPF"));
         File.WriteAllText(Path.Combine(frameworkDir, "WPF", "wpfgfx_v0400.dll"), "real");
+        Assert.False(TrackerService.HasDotNet48(fake.Bottle));
+
+        WriteFullSizeClr(frameworkDir);
         Assert.True(TrackerService.HasDotNet48(fake.Bottle));
+    }
+
+    /// <summary>The real clr.dll is about 11 MB; the detector requires more than 5 MB.</summary>
+    private static void WriteFullSizeClr(string frameworkDir)
+    {
+        using var f = File.Create(Path.Combine(frameworkDir, "clr.dll"));
+        f.SetLength(6_000_000);
     }
 
     [Fact]
@@ -85,10 +97,11 @@ public class TrackerServiceTests
         File.WriteAllText(TrackerService.ExePath(workspace), "exe");
         Assert.False(TrackerService.IsInstalled(workspace, fake.Bottle));
 
-        var wpfDir = Path.Combine(fake.Bottle.DriveC,
-            "windows", "Microsoft.NET", "Framework64", "v4.0.30319", "WPF");
-        Directory.CreateDirectory(wpfDir);
-        File.WriteAllText(Path.Combine(wpfDir, "wpfgfx_v0400.dll"), "real");
+        var frameworkDir = Path.Combine(fake.Bottle.DriveC,
+            "windows", "Microsoft.NET", "Framework64", "v4.0.30319");
+        Directory.CreateDirectory(Path.Combine(frameworkDir, "WPF"));
+        File.WriteAllText(Path.Combine(frameworkDir, "WPF", "wpfgfx_v0400.dll"), "real");
+        WriteFullSizeClr(frameworkDir);
         Assert.True(TrackerService.IsInstalled(workspace, fake.Bottle));
     }
 }
