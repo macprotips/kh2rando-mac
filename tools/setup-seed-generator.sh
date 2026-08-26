@@ -23,8 +23,12 @@ if [ -e "$DEST/localUI.py" ]; then
   say "Generator already installed at $DEST, updating launcher only."
 else
   say "Downloading seed generator $GENERATOR_VERSION source..."
-  git clone -q --depth 1 --branch "$GENERATOR_VERSION" \
-    https://github.com/tommadness/KH2Randomizer "$DEST"
+  # curl + tar instead of git: /usr/bin/git on a fresh Mac is a stub that pops
+  # Apple's "Install Command Line Tools?" dialog, and this script must run on a
+  # Mac with no developer tools at all.
+  mkdir -p "$DEST"
+  curl -fsSL "https://github.com/tommadness/KH2Randomizer/archive/refs/tags/$GENERATOR_VERSION.tar.gz" \
+    | tar -xz -C "$DEST" --strip-components 1
 
   PYBIN="$DEST/python/bin/python3.12"
   if [ ! -x "$PYBIN" ]; then
