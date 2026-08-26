@@ -172,24 +172,21 @@ for KH2: skippable cutscenes, soft reset, faster menus, and much more. It can be
 played two ways: on its own for a normal playthrough, or added to a randomizer
 setup for its quality-of-life features.
 
-1. Click the Mode button (bottom left, it says "Mode: Randomizer"). The first
-   switch offers to download Re:Fined; it is a large download.
-2. After the download, the app switches to Re:Fined mode: your randomizer mods
-   are parked, not lost, and Re:Fined is enabled. Click Build.
-3. The first Build offers to install the .NET 8 Desktop Runtime into the bottle,
-   which Re:Fined runs on. One time, a few minutes; quit Steam and the game first.
+1. Click Install Re:Fined (next to Install GoA). It is a large download.
+2. Decide how to play and set the checkboxes:
+   - Normal playthrough: tick Re:Fined, untick your seed and GoA.
+   - Randomizer run with Re:Fined's features: tick all three, with Re:Fined
+     between your seed and GoA in the list.
+3. Click Build. The first Build offers to install the .NET 8 Desktop Runtime
+   into the bottle, which Re:Fined runs on. One time, a few minutes; quit Steam
+   and the game first.
 4. Launch the game. The title screen says "Re:Fined" when it worked. Its options
    live in the in-game config menu.
 
-Click the Mode button again to go back: your randomizer mods return exactly as
-they were; click Build to apply. Keep separate save slots for the two modes;
-their saves are not interchangeable.
-
-To use Re:Fined's quality-of-life features inside a randomizer run instead, stay
-in Randomizer mode and tick Re:Fined in the mod list too, placed between your
-seed and GoA. This combo is common and works. One known quirk: seeds generated
-with "Remove Port Royal Map Select" get glitchy Port Royal menus under Re:Fined,
-so leave that seed option off when combining them.
+Keep separate save slots for normal Re:Fined playthroughs and randomizer runs;
+their saves are not interchangeable. One known quirk when combining: seeds
+generated with "Remove Port Royal Map Select" get glitchy Port Royal menus under
+Re:Fined, so leave that seed option off.
 
 Add-on packs (voice packs, vanilla music) install the same way from the
 [Re:Fined project page](https://github.com/KH-ReFined/KH-ReFined#additional-content);

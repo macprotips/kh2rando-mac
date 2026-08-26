@@ -128,6 +128,7 @@ public partial class MainWindow : Window
             InstallGitButton.IsEnabled = !busy;
             InstallZipButton.IsEnabled = !busy;
             InstallGoaButton.IsEnabled = !busy;
+            InstallRefinedButton.IsEnabled = !busy;
             ModList.IsEnabled = !busy;
         });
     }
@@ -225,9 +226,6 @@ public partial class MainWindow : Window
         _workspace = snapshot.workspace;
         var status = snapshot.Item3;
 
-        ModeButton.Content = ModeService.Normalize(_config.ActiveMode) == ModeService.Refined
-            ? "Mode: Re:Fined"
-            : "Mode: Randomizer";
         PaintStatusRow(GameStatusBadge, GameStatusIcon, GameStatusText, status.Game);
         PaintStatusRow(LoaderStatusBadge, LoaderStatusIcon, LoaderStatusText, status.Loader);
         PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
@@ -648,36 +646,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnSwitchMode(object? sender, RoutedEventArgs e)
-    {
-        if (_busy)
-            return;
-        var current = ModeService.Normalize(_config.ActiveMode);
-        if (current == ModeService.Rando &&
-            !_workspace.InstalledMods().Any(RefinedService.IsRefinedMod))
-        {
-            var download = await ConfirmAsync(
-                "Install Re:Fined",
-                "Re:Fined mode is for normal playthroughs with quality-of-life features: " +
-                "skippable cutscenes, a prologue skip, faster menus, and more. It is not " +
-                "installed yet. Download it now? It is a large download and takes a while.",
-                "Download");
-            if (!download)
-                return;
-            await RunTask("Install Re:Fined", () => Task.Run(() =>
-                new ModsService(_workspace).InstallFromGit(RefinedService.MainMod, Log)));
-            if (!_workspace.InstalledMods().Any(RefinedService.IsRefinedMod))
-                return;
-        }
-
-        var next = ModeService.Switch(_config, _workspace);
-        _config.Save();
-        Log(next == ModeService.Refined
-            ? "Mode: Re:Fined. Click Build to apply. Keep separate save slots from the randomizer."
-            : "Mode: Randomizer. Click Build to apply.");
-        await RefreshAllAsync();
-    }
-
     private void OnRevealLog(object? sender, RoutedEventArgs e) => RevealLogInFinder();
 
     /// <summary>Highlight the log file in Finder so it can be dragged into a bug report.</summary>
@@ -784,6 +752,34 @@ public partial class MainWindow : Window
             var name = mods.InstallFromGit(goa, Log);
             mods.SetEnabled(name, true);
             Log("Enabled. Click Build to apply.");
+        }));
+    }
+
+    private async void OnInstallRefined(object? sender, RoutedEventArgs e)
+    {
+        if (Directory.Exists(_workspace.ModPath(RefinedService.MainMod)))
+        {
+            Log("Re:Fined is already installed; tick it in the list and Build.");
+            return;
+        }
+        var download = await ConfirmAsync(
+            "Install Re:Fined",
+            "Re:Fined adds quality-of-life features: skippable cutscenes, soft reset, " +
+            "a prologue skip, faster menus, and more. Use it on its own for a normal " +
+            "playthrough or alongside a randomizer seed. It is a large download and " +
+            "takes a while.",
+            "Download");
+        if (!download)
+            return;
+        await RunTask("Install Re:Fined", () => Task.Run(() =>
+        {
+            var mods = new ModsService(_workspace);
+            var name = mods.InstallFromGit(RefinedService.MainMod, Log);
+            mods.SetEnabled(name, true);
+            Log("Enabled. Click Build to apply; the first Build offers a one-time");
+            Log(".NET runtime install into the bottle, which Re:Fined runs on.");
+            Log("For a normal playthrough, untick your seed and GoA first. For a rando");
+            Log("run with Re:Fined, keep it between your seed and GoA in the list.");
         }));
     }
 
