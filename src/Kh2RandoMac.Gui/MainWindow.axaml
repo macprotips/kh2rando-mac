@@ -26,6 +26,8 @@
                   ToolTip.Tip="Re-check the game, mod loader, and mod list."/>
           <Button x:Name="ResetButton" Content="Reset…" Click="OnReset"
                   ToolTip.Tip="Return the game to vanilla: removes the mod loader, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
+          <Button x:Name="LogButton" Content="Log" Click="OnRevealLog"
+                  ToolTip.Tip="Show the app's log file in Finder. If something goes wrong, send this file with your bug report."/>
         </StackPanel>
       </Grid>
     </Border>

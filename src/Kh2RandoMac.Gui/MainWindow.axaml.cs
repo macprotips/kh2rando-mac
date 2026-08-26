@@ -557,7 +557,8 @@ public partial class MainWindow : Window
             else if (proc.HasExited)
             {
                 Log("The tracker exited without showing a window; it crashed while starting.");
-                Log($"Details were saved to {FileLog.LogPath}; attach that file to a bug report.");
+                Log("Details were saved to the app log, now highlighted in Finder. Send that file with your bug report.");
+                RevealLogInFinder();
             }
             else
                 Log("The tracker is taking longer than usual; its window should appear shortly.");
@@ -572,6 +573,26 @@ public partial class MainWindow : Window
             _trackerLaunching = false;
             TrackerButton.Content = original;
             TrackerButton.IsEnabled = !_busy;
+        }
+    }
+
+    private void OnRevealLog(object? sender, RoutedEventArgs e) => RevealLogInFinder();
+
+    /// <summary>Highlight the log file in Finder so it can be dragged into a bug report.</summary>
+    private void RevealLogInFinder()
+    {
+        try
+        {
+            if (!File.Exists(FileLog.LogPath))
+                FileLog.Write("Log file created from the Log button.");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("/usr/bin/open")
+            {
+                ArgumentList = { "-R", FileLog.LogPath },
+            });
+        }
+        catch (Exception ex)
+        {
+            Log($"Could not open Finder: {ex.Message}. The log is at {FileLog.LogPath}");
         }
     }
 
