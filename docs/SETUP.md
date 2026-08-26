@@ -165,6 +165,29 @@ half-finished.
 In the tracker, turn on auto-tracking from its Options menu once the game is
 running.
 
+## Optional: Re:Fined instead of the randomizer
+
+[Re:Fined](https://github.com/KH-ReFined/KH-ReFined) is a quality-of-life overhaul
+for playing KH2 normally: skippable cutscenes, faster menus, and much more. It is a
+different way to play than the randomizer, not an addition to it: the two rewrite
+the same game systems and do not run together.
+
+1. In the Manager, type `KH-ReFined/KH2-MAIN` in the GitHub box and click Install
+   from GitHub. It is a large download.
+2. Untick the randomizer mods (your seed and GoA), tick Re:Fined, and click Build.
+3. The first Build offers to install the .NET 8 Desktop Runtime into the bottle,
+   which Re:Fined runs on. One time, a few minutes; quit Steam and the game first.
+4. Launch the game. The title screen says "Re:Fined" when it worked. Its options
+   live in the in-game config menu.
+
+To go back to the randomizer: untick Re:Fined, tick your seed and GoA, Build.
+Keep separate save slots for the two; their saves are not interchangeable.
+
+Add-on packs (voice packs, vanilla music) install the same way from the
+[Re:Fined project page](https://github.com/KH-ReFined/KH-ReFined#additional-content);
+place them above the main mod in the list. The Re:Fined project was finished and
+archived by its authors in August 2026; the final version is what you get.
+
 ## Troubleshooting
 
 - "Bottle appears to be running" during setup: something in the bottle is still

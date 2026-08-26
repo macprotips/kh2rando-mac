@@ -761,16 +761,84 @@ public partial class MainWindow : Window
         new PatchBuilder(_workspace).Build(Log, _config.Language);
     }
 
-    private async void OnBuild(object? sender, RoutedEventArgs e) => await RunTask("Build", () => Task.Run(() =>
+    private async void OnBuild(object? sender, RoutedEventArgs e)
     {
-        BuildCore();
-        Log("Build complete ✓, launch the game through CrossOver whenever you like.");
-    }));
+        if (!await EnsureRefinedPrerequisites())
+            return;
+        await RunTask("Build", () => Task.Run(() =>
+        {
+            BuildCore();
+            Log("Build complete ✓, launch the game through CrossOver whenever you like.");
+        }));
+    }
 
-    private async void OnBuildRun(object? sender, RoutedEventArgs e) => await RunTask("Build & Run", () => Task.Run(() =>
+    private async void OnBuildRun(object? sender, RoutedEventArgs e)
     {
-        BuildCore();
-        Log("Build complete ✓, launching the game via CrossOver...");
-        Log(Core.Launcher.LaunchKh2(_config));
-    }));
+        if (!await EnsureRefinedPrerequisites())
+            return;
+        await RunTask("Build & Run", () => Task.Run(() =>
+        {
+            BuildCore();
+            Log("Build complete ✓, launching the game via CrossOver...");
+            Log(Core.Launcher.LaunchKh2(_config));
+        }));
+    }
+
+    /// <summary>
+    /// Re:Fined needs the .NET 8 Desktop Runtime inside the bottle; offer the one-time
+    /// install when a Re:Fined mod is enabled. Also warn when the randomizer mods are
+    /// enabled alongside it: the two rewrite the same game systems and do not mix.
+    /// Returns false when the build should not proceed yet.
+    /// </summary>
+    private async Task<bool> EnsureRefinedPrerequisites()
+    {
+        if (_busy || !RefinedService.AnyRefinedEnabled(_workspace))
+            return !_busy;
+
+        var conflicts = RefinedService.ConflictingEnabledMods(_workspace);
+        if (conflicts.Count > 0)
+        {
+            Log("WARNING: Re:Fined and other gameplay mods are enabled together:");
+            Log("  " + string.Join(", ", conflicts));
+            Log("Re:Fined and the randomizer do not mix. Enable one or the other, then Build.");
+        }
+
+        Bottle bottle;
+        try
+        {
+            bottle = Bottle.Resolve(_config);
+        }
+        catch
+        {
+            return true; // Not set up yet; the build itself reports that properly.
+        }
+        if (bottle.Platform != WinePlatform.CrossOver || RefinedService.HasDesktopRuntime(bottle))
+            return true;
+
+        var confirmed = await ConfirmAsync(
+            "Install the .NET 8 Desktop Runtime",
+            "Re:Fined runs on the .NET 8 Desktop Runtime, which is not in the " +
+            $"'{bottle.Name}' bottle yet. This is a one-time install of a few minutes. " +
+            "Quit the game and Steam in CrossOver before continuing.",
+            "Install");
+        if (!confirmed)
+        {
+            Log("Build cancelled: Re:Fined needs the .NET 8 Desktop Runtime in the bottle.");
+            return false;
+        }
+        var ok = true;
+        await RunTask("Install .NET 8 Desktop Runtime", async () =>
+        {
+            try
+            {
+                await new RefinedService().EnsureDesktopRuntime(_workspace, bottle, Log);
+            }
+            catch
+            {
+                ok = false;
+                throw;
+            }
+        });
+        return ok;
+    }
 }

@@ -74,6 +74,10 @@ auto-tracking. The first click installs it, which includes a one-time .NET
 Framework install into the bottle and takes 15 to 30 minutes; quit Steam and the
 game first. After that it opens instantly.
 
+The Manager also supports [Re:Fined](https://github.com/KH-ReFined/KH-ReFined),
+the quality-of-life overhaul for normal playthroughs, as an alternative to the
+randomizer; see the [Setup Guide](docs/SETUP.md#optional-refined-instead-of-the-randomizer).
+
 There is also a command line version (`kh2rando`); run `kh2rando help` for the
 commands. Diagnostics are written to `~/Library/Logs/kh2rando-mac.log`. Attach that
 file to bug reports.

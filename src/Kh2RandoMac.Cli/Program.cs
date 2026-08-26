@@ -366,6 +366,21 @@ static int Build()
     var (config, workspace) = LoadConfigured();
     if (!ExtractionService.LooksExtracted(workspace.DataDir))
         throw new InvalidOperationException("Game data not extracted yet, run 'kh2rando extract' first.");
+    if (RefinedService.AnyRefinedEnabled(workspace))
+    {
+        var conflicts = RefinedService.ConflictingEnabledMods(workspace);
+        if (conflicts.Count > 0)
+        {
+            Say("WARNING: Re:Fined and other gameplay mods are enabled together: " + string.Join(", ", conflicts));
+            Say("Re:Fined and the randomizer do not mix. Enable one or the other, then build.");
+        }
+        var bottle = Bottle.Resolve(config);
+        if (bottle.Platform == WinePlatform.CrossOver && !RefinedService.HasDesktopRuntime(bottle))
+        {
+            Say("Re:Fined needs the .NET 8 Desktop Runtime in the bottle; installing (one time).");
+            new RefinedService().EnsureDesktopRuntime(workspace, bottle, Say).GetAwaiter().GetResult();
+        }
+    }
     new PatchBuilder(workspace).Build(Say, config.Language);
     Say("Done. Launch the game through CrossOver (or 'kh2rando run').");
     return 0;
