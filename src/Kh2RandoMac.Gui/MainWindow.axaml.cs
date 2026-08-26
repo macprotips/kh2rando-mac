@@ -477,6 +477,7 @@ public partial class MainWindow : Window
     }
 
     private bool _trackerLaunching;
+    private bool _trackerRepairArmed;
 
     private async void OnTracker(object? sender, RoutedEventArgs e)
     {
@@ -498,6 +499,25 @@ public partial class MainWindow : Window
             return;
         }
         TrackerService.LogDotNetState(bottle);
+
+        if (_trackerRepairArmed)
+        {
+            var repair = await ConfirmAsync(
+                "Repair the tracker",
+                "The tracker crashed last time, which usually means the bottle's .NET Framework " +
+                "is incomplete. Repair removes Wine's substitute and reinstalls the real " +
+                "framework, which takes 15 to 30 minutes. Quit the game and Steam in CrossOver " +
+                "before continuing.",
+                "Repair");
+            if (!repair)
+                return;
+            _trackerRepairArmed = false;
+            await RunTask("Repair tracker install", () =>
+                new TrackerService().EnsureInstalled(_workspace, bottle, Log, force: true));
+            if (TrackerService.IsInstalled(_workspace, bottle))
+                await LaunchTrackerWithSpinner(bottle);
+            return;
+        }
 
         if (TrackerService.IsInstalled(_workspace, bottle))
         {
@@ -571,8 +591,10 @@ public partial class MainWindow : Window
                 Log("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
             else if (proc.HasExited)
             {
+                _trackerRepairArmed = true;
                 Log("The tracker exited without showing a window; it crashed while starting.");
-                Log("Details were saved to the app log, now highlighted in Finder. Send that file with your bug report.");
+                Log("Click Tracker again to run a repair install (15 to 30 minutes; quit Steam first).");
+                Log("Details were saved to the app log, now highlighted in Finder.");
                 RevealLogInFinder();
             }
             else

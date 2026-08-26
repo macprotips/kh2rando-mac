@@ -45,8 +45,14 @@ public class TrackerService
         var clr = new FileInfo(Path.Combine(framework, "clr.dll"));
         var wpf = File.Exists(Path.Combine(framework, "WPF", "wpfgfx_v0400.dll"));
         bottle.GetDllOverrides().TryGetValue("mscoree", out var mscoree);
+        // The loader dll sizes tell a real install (Microsoft's files) apart from
+        // Wine's stubs when the big marker files alone look complete.
+        var ms64 = new FileInfo(Path.Combine(bottle.DriveC, "windows", "system32", "mscoree.dll"));
+        var ms32 = new FileInfo(Path.Combine(bottle.DriveC, "windows", "syswow64", "mscoree.dll"));
         FileLog.Write($"[tracker] detection: wpfgfx={wpf} clr={(clr.Exists ? clr.Length : 0)} " +
-            $"verdict={HasDotNet48(bottle)} mscoree={mscoree ?? "unset"} bottle={bottle.Name}");
+            $"verdict={HasDotNet48(bottle)} mscoree={mscoree ?? "unset"} " +
+            $"loader64={(ms64.Exists ? ms64.Length : 0)} loader32={(ms32.Exists ? ms32.Length : 0)} " +
+            $"bottle={bottle.Name}");
     }
 
     /// <summary>
@@ -69,8 +75,11 @@ public class TrackerService
     /// <summary>
     /// Download the tracker and, if needed, install .NET Framework 4.8 into the bottle.
     /// The .NET step is the slow one (15 to 30 minutes) and needs the bottle quit.
+    /// With force, the removal and install run even when detection says the framework
+    /// is present: the repair path for a bottle where a broken earlier install left
+    /// enough files to pass detection but not enough to run.
     /// </summary>
-    public async Task EnsureInstalled(Workspace workspace, Bottle bottle, Action<string> log)
+    public async Task EnsureInstalled(Workspace workspace, Bottle bottle, Action<string> log, bool force = false)
     {
         if (bottle.Platform != WinePlatform.CrossOver)
             throw new InvalidOperationException("The tracker install currently supports CrossOver bottles only.");
@@ -87,7 +96,7 @@ public class TrackerService
             log($"Tracker {release.Tag} downloaded.");
         }
 
-        if (HasDotNet48(bottle))
+        if (!force && HasDotNet48(bottle))
             return;
 
         if (bottle.IsRunning())
