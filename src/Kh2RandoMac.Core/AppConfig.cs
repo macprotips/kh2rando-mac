@@ -33,6 +33,8 @@ public class AppConfig
     }
 
     public string WorkspaceRoot { get; set; } = AppPaths.DefaultWorkspace;
+    /// <summary>Active play mode: "rando" (default) or "refined". Each keeps its own enabled-mod list.</summary>
+    public string ActiveMode { get; set; } = ModeService.Rando;
     /// <summary>Language folder under Image/ containing the .hed/.pkg files (usually "en", "dt" on Steam, "jp" for Japan).</summary>
     public string Language { get; set; } = "en";
 

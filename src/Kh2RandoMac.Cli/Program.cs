@@ -17,6 +17,7 @@ try
         "disable" => ModAction(rest, "disable"),
         "list" => ListMods(),
         "build" => Build(),
+        "mode" => Mode(rest),
         "run" => Run(),
         "movies" => Movies(rest),
         "tracker" => await Tracker(),
@@ -63,6 +64,8 @@ static int Help()
           update [mod]              Update GitHub-installed mods (no argument = all)
           build                     Build enabled mods into the folder Panacea loads
                                     (no mods enabled = clean vanilla build)
+          mode [rando|refined]      Show or switch the play mode; each mode keeps its
+                                    own enabled-mod list (Re:Fined = QoL overhaul)
 
         Game:
           run                       Launch KH 1.5+2.5 through CrossOver
@@ -358,6 +361,26 @@ static int ListMods()
         Console.WriteLine($"  {mark} {mod.Name}{(title != null && title != mod.Name ? $"  ({title})" : "")}");
     }
     Console.WriteLine("\nEnabled mods load top-first; run 'kh2rando build' after changes.");
+    return 0;
+}
+
+static int Mode(string[] rest)
+{
+    var (config, workspace) = LoadConfigured();
+    var current = ModeService.Normalize(config.ActiveMode);
+    if (rest.Length == 0)
+    {
+        Say($"Current mode: {current}. 'kh2rando mode rando' or 'kh2rando mode refined' switches.");
+        return 0;
+    }
+    if (ModeService.Normalize(rest[0]) == current)
+    {
+        Say($"Already in {current} mode.");
+        return 0;
+    }
+    var next = ModeService.Switch(config, workspace);
+    config.Save();
+    Say($"Mode: {next}. Run 'kh2rando build' to apply. Keep separate save slots per mode.");
     return 0;
 }
 

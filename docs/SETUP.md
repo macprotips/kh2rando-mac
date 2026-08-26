@@ -172,16 +172,18 @@ for playing KH2 normally: skippable cutscenes, faster menus, and much more. It i
 different way to play than the randomizer, not an addition to it: the two rewrite
 the same game systems and do not run together.
 
-1. In the Manager, type `KH-ReFined/KH2-MAIN` in the GitHub box and click Install
-   from GitHub. It is a large download.
-2. Untick the randomizer mods (your seed and GoA), tick Re:Fined, and click Build.
+1. Click the Mode button (bottom left, it says "Mode: Randomizer"). The first
+   switch offers to download Re:Fined; it is a large download.
+2. After the download, the app switches to Re:Fined mode: your randomizer mods
+   are parked, not lost, and Re:Fined is enabled. Click Build.
 3. The first Build offers to install the .NET 8 Desktop Runtime into the bottle,
    which Re:Fined runs on. One time, a few minutes; quit Steam and the game first.
 4. Launch the game. The title screen says "Re:Fined" when it worked. Its options
    live in the in-game config menu.
 
-To go back to the randomizer: untick Re:Fined, tick your seed and GoA, Build.
-Keep separate save slots for the two; their saves are not interchangeable.
+Click the Mode button again to go back: your randomizer mods return exactly as
+they were; click Build to apply. Keep separate save slots for the two modes;
+their saves are not interchangeable.
 
 Add-on packs (voice packs, vanilla music) install the same way from the
 [Re:Fined project page](https://github.com/KH-ReFined/KH-ReFined#additional-content);
