@@ -74,7 +74,7 @@ public class TrackerService
 
     /// <summary>
     /// Download the tracker and, if needed, install .NET Framework 4.8 into the bottle.
-    /// The .NET step is the slow one (15 to 30 minutes) and needs the bottle quit.
+    /// The .NET step is the slow one (a few minutes) and needs the bottle quit.
     /// With force, the removal and install run even when detection says the framework
     /// is present: the repair path for a bottle where a broken earlier install left
     /// enough files to pass detection but not enough to run.
@@ -104,7 +104,7 @@ public class TrackerService
                 $"Bottle '{bottle.Name}' appears to be running. Quit the game and Steam in CrossOver " +
                 "first, then try again; the .NET Framework installer needs the bottle to itself.");
 
-        log("Installing .NET Framework 4.8 into the bottle. One time only, takes 15 to 30 minutes.");
+        log("Installing .NET Framework 4.8 into the bottle. One time only, takes a few minutes.");
 
         // Wine's built-in mono registers itself as .NET 4.8, which makes the real
         // installer exit early claiming success. Remove it first.

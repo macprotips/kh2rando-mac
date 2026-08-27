@@ -71,7 +71,7 @@ after any mod change.
 Optional: the Tracker button opens the community
 [KH2 item tracker](https://github.com/Dee-Ayy/KH2Tracker) next to the game, with
 auto-tracking. The first click installs it, which includes a one-time .NET
-Framework install into the bottle and takes 15 to 30 minutes; quit Steam and the
+Framework install into the bottle and takes a few minutes; quit Steam and the
 game first. After that it opens instantly.
 
 The Manager also supports [Re:Fined](https://github.com/KH-ReFined/KH-ReFined),

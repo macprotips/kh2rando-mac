@@ -152,14 +152,14 @@ button opens the community [KH2 item tracker](https://github.com/Dee-Ayy/KH2Trac
 with auto-tracking: it marks off checks by itself as you pick things up.
 
 The first click installs it. That includes a one-time .NET Framework 4.8 install
-into the bottle, which takes 15 to 30 minutes; quit the game and Steam in CrossOver
+into the bottle, which takes a few minutes; quit the game and Steam in CrossOver
 first, then leave it alone until the log says it is done. Every click after that
 opens the tracker in a few seconds, and it is fine to open it while the game is
 running.
 
 If the tracker crashes on startup instead of opening, click Tracker again: the app
-offers a Repair that reinstalls the bottle's .NET Framework cleanly (same 15 to 30
-minutes, quit Steam first). This fixes bottles where an earlier install was left
+offers a Repair that reinstalls the bottle's .NET Framework cleanly (a few minutes,
+quit Steam first). This fixes bottles where an earlier install was left
 half-finished.
 
 In the tracker, turn on auto-tracking from its Options menu once the game is
