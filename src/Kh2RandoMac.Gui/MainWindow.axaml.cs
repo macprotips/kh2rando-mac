@@ -509,6 +509,15 @@ public partial class MainWindow : Window
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
+        // The title bar is not drawn on these sheets, so the title has to live in the
+        // content or the dialog never says what it is about.
+        var heading = new TextBlock
+        {
+            Text = title,
+            FontSize = 15,
+            FontWeight = Avalonia.Media.FontWeight.SemiBold,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
         var text = new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
         var cancel = new Button { Content = "Cancel" };
         var ok = new Button { Content = continueText, FontWeight = Avalonia.Media.FontWeight.SemiBold };
@@ -517,9 +526,10 @@ public partial class MainWindow : Window
         dialog.Content = new StackPanel
         {
             Margin = new Avalonia.Thickness(20),
-            Spacing = 16,
+            Spacing = 14,
             Children =
             {
+                heading,
                 text,
                 new StackPanel
                 {
@@ -558,10 +568,12 @@ public partial class MainWindow : Window
         var action = turningOn ? "Turn On" : "Turn Off";
         var confirmed = await ConfirmAsync(
             turningOn ? "Turn on the FPS HUD" : "Turn off the FPS HUD",
-            $"This affects the '{bottle.Name}' bottle only, nothing else on your Mac.\n\n" +
-            $"1. Quit CrossOver and Steam if they are open.\n" +
-            $"2. Click {action}.\n" +
-            $"3. Start Steam and the game again. The overlay {(turningOn ? "appears" : "is gone")} from then on.",
+            (turningOn
+                ? "The FPS HUD is a frame rate overlay shown while you play. "
+                : "This removes the frame rate overlay shown while you play. ") +
+            "It applies to your Kingdom Hearts bottle only.\n\n" +
+            "Quit CrossOver and Steam before continuing. Start them again afterwards and the " +
+            (turningOn ? "overlay will be there." : "overlay will be gone."),
             action);
         if (!confirmed)
             return;
@@ -607,8 +619,8 @@ public partial class MainWindow : Window
         {
             var repair = await ConfirmAsync(
                 "Repair the tracker",
-                "The tracker crashed on startup, which usually means the bottle's .NET Framework " +
-                "install is incomplete. Repair reinstalls it from scratch and takes 15 to 30 " +
+                "The tracker crashed on startup, which usually means the .NET Framework in your " +
+                "Kingdom Hearts bottle is incomplete. Repair reinstalls it and takes 15 to 30 " +
                 "minutes. Quit the game and Steam first.",
                 "Repair");
             if (!repair)
@@ -643,7 +655,7 @@ public partial class MainWindow : Window
         var confirmed = await ConfirmAsync(
             "Install the item tracker",
             "This downloads the KH2 item tracker and installs the .NET Framework it needs " +
-            $"into the '{bottle.Name}' bottle. The .NET step happens once and takes 15 to 30 " +
+            "into your Kingdom Hearts bottle. The .NET step happens once and takes 15 to 30 " +
             "minutes. Quit the game and Steam first.",
             "Install");
         if (!confirmed)
@@ -966,8 +978,8 @@ public partial class MainWindow : Window
 
         var confirmed = await ConfirmAsync(
             "Install the .NET 8 Desktop Runtime",
-            "Re:Fined needs the .NET 8 Desktop Runtime, which is not in the " +
-            $"'{bottle.Name}' bottle yet. This is a one-time install of a few minutes. " +
+            "Re:Fined needs the .NET 8 Desktop Runtime, which is not in your Kingdom " +
+            "Hearts bottle yet. This is a one-time install of a few minutes. " +
             "Quit the game and Steam first.",
             "Install");
         if (!confirmed)
