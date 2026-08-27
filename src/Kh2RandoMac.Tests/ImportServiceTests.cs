@@ -38,10 +38,10 @@ public class ImportServiceTests : IDisposable
         _source.SaveEnabledMods(new[] { "two", "author/one" });
         var box = Path.Combine(_root, "box");
         Directory.CreateDirectory(box);
-        ExportService.Export(_source, box);
+        var made = ExportService.Export(_source, box);
 
-        Assert.Equal(FolderKind.Export, ImportService.Identify(box));
-        var count = ImportService.Import(_target, box, applyLoadOrder: true);
+        Assert.Equal(FolderKind.Export, ImportService.Identify(made));
+        var count = ImportService.Import(_target, made, applyLoadOrder: true);
 
         Assert.Equal(2, count);
         Assert.Equal(new[] { "author/one", "two" }, _target.InstalledMods().OrderBy(m => m));
@@ -57,11 +57,11 @@ public class ImportServiceTests : IDisposable
         _source.SaveEnabledMods(new[] { "one" });
         var box = Path.Combine(_root, "box");
         Directory.CreateDirectory(box);
-        ExportService.Export(_source, box);
+        var made = ExportService.Export(_source, box);
 
         FakeMod(_target, "one", "old");
         _target.SaveEnabledMods(new[] { "something-else" });
-        ImportService.Import(_target, box, applyLoadOrder: true);
+        ImportService.Import(_target, made, applyLoadOrder: true);
 
         Assert.Equal("new", File.ReadAllText(Path.Combine(_target.ModPath("one"), "nested", "data.txt")));
         Assert.Equal(new[] { "one" }, _target.EnabledMods());

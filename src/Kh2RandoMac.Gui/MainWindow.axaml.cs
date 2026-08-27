@@ -736,9 +736,9 @@ public partial class MainWindow : Window
 
         await RunTask("Export mods", () => Task.Run(() =>
         {
-            var count = ExportService.Export(_workspace, destination, Log);
-            Log($"Exported {count} mod(s) and the load order to {destination}");
-            Log("Zip that folder to share it. It includes a README explaining how to restore it.");
+            var created = ExportService.Export(_workspace, destination, Log);
+            Log($"Exported {_mods.Count} mod(s) and the load order to {created}");
+            Log("Zip that one folder to share it, or drop it on this window to restore it later.");
         }));
     }
 

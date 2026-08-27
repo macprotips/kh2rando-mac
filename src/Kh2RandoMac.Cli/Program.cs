@@ -374,8 +374,8 @@ static int Export(string[] rest)
     if (rest.Length == 0)
         throw new InvalidOperationException("Usage: kh2rando export <folder>");
     var (_, workspace) = LoadConfigured();
-    var count = ExportService.Export(workspace, rest[0], Say);
-    Say($"Exported {count} mod(s) and the load order to {rest[0]}");
+    var created = ExportService.Export(workspace, rest[0], Say);
+    Say($"Exported {workspace.InstalledMods().Count} mod(s) and the load order to {created}");
     return 0;
 }
 

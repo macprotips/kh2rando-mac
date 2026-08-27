@@ -4,12 +4,15 @@ namespace Kh2RandoMac.Core;
 /// Copies the installed mods and the load order into a folder the user can back up,
 /// move to another Mac, or hand to someone else. The export is a plain folder of
 /// files on purpose: no archive format to get wrong, and anyone can look inside it.
+/// Everything goes inside one named folder so exporting to somewhere like the Desktop
+/// leaves a single item to zip and send, not loose files.
 /// </summary>
 public static class ExportService
 {
     public const string ModsFolderName = "mods";
     public const string OrderFileName = "mods-KH2.txt";
     public const string ReadmeName = "README.txt";
+    public const string FolderName = "KH2 Rando Export";
 
     /// <summary>Total bytes the export will copy, so callers can warn before a slow one.</summary>
     public static long EstimateSize(Workspace workspace) =>
@@ -24,21 +27,18 @@ public static class ExportService
         : $"{Math.Max(1, bytes / 1024)} KB";
 
     /// <summary>
-    /// Write the export into <paramref name="destination"/>. Returns how many mods were
-    /// copied. Refuses a destination that already holds an export so a stray click can
-    /// never quietly overwrite one.
+    /// Write the export into a new folder inside <paramref name="destination"/> and
+    /// return that folder's path. An existing export is never overwritten: the next
+    /// free name is used instead.
     /// </summary>
-    public static int Export(Workspace workspace, string destination, Action<string>? log = null)
+    public static string Export(Workspace workspace, string destination, Action<string>? log = null)
     {
         var mods = workspace.InstalledMods();
         if (mods.Count == 0)
             throw new InvalidOperationException("There are no installed mods to export.");
 
+        destination = NextFreeFolder(destination);
         var modsOut = Path.Combine(destination, ModsFolderName);
-        if (Directory.Exists(modsOut))
-            throw new InvalidOperationException(
-                $"'{destination}' already contains an export. Pick an empty folder, or move the old one aside.");
-
         Directory.CreateDirectory(modsOut);
         foreach (var mod in mods)
         {
@@ -52,7 +52,16 @@ public static class ExportService
             File.Copy(workspace.EnabledModsFile, Path.Combine(destination, OrderFileName), true);
 
         File.WriteAllText(Path.Combine(destination, ReadmeName), Readme(mods.Count));
-        return mods.Count;
+        return destination;
+    }
+
+    /// <summary>"KH2 Rando Export", or the next free numbered variant beside it.</summary>
+    private static string NextFreeFolder(string parent)
+    {
+        var candidate = Path.Combine(parent, FolderName);
+        for (var n = 2; Directory.Exists(candidate); n++)
+            candidate = Path.Combine(parent, $"{FolderName} {n}");
+        return candidate;
     }
 
     private static string Readme(int modCount) =>

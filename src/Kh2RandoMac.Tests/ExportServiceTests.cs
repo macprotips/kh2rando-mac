@@ -36,28 +36,33 @@ public class ExportServiceTests : IDisposable
         var dest = Path.Combine(_root, "out");
         Directory.CreateDirectory(dest);
 
-        var count = ExportService.Export(_workspace, dest);
+        var made = ExportService.Export(_workspace, dest);
 
-        Assert.Equal(2, count);
-        Assert.True(File.Exists(Path.Combine(dest, "mods", "author", "one", "mod.yml")));
-        Assert.True(File.Exists(Path.Combine(dest, "mods", "author", "one", "nested", "mod.yml")));
-        Assert.True(File.Exists(Path.Combine(dest, "mods", "two", "mod.yml")));
-        Assert.True(File.Exists(Path.Combine(dest, ExportService.ReadmeName)));
+        // Everything lands inside one named folder, not loose in the chosen one.
+        Assert.Equal(ExportService.FolderName, Path.GetFileName(made));
+        Assert.Equal(new[] { made }, Directory.GetDirectories(dest));
+        Assert.True(File.Exists(Path.Combine(made, "mods", "author", "one", "mod.yml")));
+        Assert.True(File.Exists(Path.Combine(made, "mods", "author", "one", "nested", "mod.yml")));
+        Assert.True(File.Exists(Path.Combine(made, "mods", "two", "mod.yml")));
+        Assert.True(File.Exists(Path.Combine(made, ExportService.ReadmeName)));
         // Load order is what decides conflicts, so it has to travel with the files.
         Assert.Equal(new[] { "two", "author/one" },
-            File.ReadAllLines(Path.Combine(dest, ExportService.OrderFileName)));
+            File.ReadAllLines(Path.Combine(made, ExportService.OrderFileName)));
     }
 
     [Fact]
-    public void Export_RefusesToOverwriteAnExistingExport()
+    public void Export_NeverOverwritesAnEarlierExport()
     {
         InstallFakeMod("one");
         var dest = Path.Combine(_root, "out");
         Directory.CreateDirectory(dest);
-        ExportService.Export(_workspace, dest);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => ExportService.Export(_workspace, dest));
-        Assert.Contains("already contains an export", ex.Message);
+        var first = ExportService.Export(_workspace, dest);
+        var second = ExportService.Export(_workspace, dest);
+
+        Assert.NotEqual(first, second);
+        Assert.True(Directory.Exists(first));
+        Assert.EndsWith("2", Path.GetFileName(second));
     }
 
     [Fact]
