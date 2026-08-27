@@ -236,6 +236,9 @@ static int Install(string[] rest)
         name = mods.InstallFromGit(target, Say);
     }
     mods.SetEnabled(name, true);
+    var issue = KnownIssues.For(name);
+    if (issue != null)
+        Say("WARNING: " + issue);
     Say($"Enabled '{name}'. Run 'kh2rando build' to apply.");
     return 0;
 }
@@ -366,6 +369,8 @@ static int Build()
     var (config, workspace) = LoadConfigured();
     if (!ExtractionService.LooksExtracted(workspace.DataDir))
         throw new InvalidOperationException("Game data not extracted yet, run 'kh2rando extract' first.");
+    foreach (var note in KnownIssues.ForEnabled(workspace))
+        Say("WARNING: " + note);
     if (RefinedService.AnyRefinedEnabled(workspace))
     {
         var conflicts = RefinedService.ConflictingEnabledMods(workspace);

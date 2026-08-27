@@ -93,6 +93,7 @@ public partial class MainWindow : Window
                     ? mods.InstallFromLua(file, Log)
                     : mods.InstallFromZip(file, Log);
                 mods.SetEnabled(name, true);
+                WarnIfKnownIssue(name);
             }
             Log("Enabled. Click Build to apply.");
         }));
@@ -366,6 +367,7 @@ public partial class MainWindow : Window
             var name = mods.InstallFromGit(repo, Log);
             mods.SetEnabled(name, true);
             Log($"Enabled '{name}'. Click Build to apply.");
+            WarnIfKnownIssue(name);
         }));
         RepoBox.Text = "";
     }
@@ -808,10 +810,20 @@ public partial class MainWindow : Window
         }));
     }
 
+    /// <summary>Surface a confirmed problem with a mod at the moment the user acts on it.</summary>
+    private void WarnIfKnownIssue(string modName)
+    {
+        var note = KnownIssues.For(modName);
+        if (note != null)
+            Log("WARNING: " + note);
+    }
+
     private void BuildCore()
     {
         if (!ExtractionService.LooksExtracted(_workspace.DataDir))
             throw new InvalidOperationException("Game data not extracted yet, click Extract Game Data first.");
+        foreach (var note in KnownIssues.ForEnabled(_workspace))
+            Log("WARNING: " + note);
         new PatchBuilder(_workspace).Build(Log, _config.Language);
     }
 
