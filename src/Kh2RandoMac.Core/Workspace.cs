@@ -41,12 +41,19 @@ public class Workspace
         File.WriteAllLines(EnabledModsFile, mods);
 
     /// <summary>All installed mod names ("author/repo" or plain names for zip installs).</summary>
-    public List<string> InstalledMods()
+    public List<string> InstalledMods() => ScanMods(ModsDir);
+
+    /// <summary>
+    /// Mod names found under any mods directory, laid out as &lt;name&gt; or
+    /// &lt;author&gt;/&lt;repo&gt;. Shared so an exported folder can be read the same way
+    /// as the live one.
+    /// </summary>
+    public static List<string> ScanMods(string modsDir)
     {
         var result = new List<string>();
-        if (!Directory.Exists(ModsDir))
+        if (!Directory.Exists(modsDir))
             return result;
-        foreach (var top in Directory.GetDirectories(ModsDir))
+        foreach (var top in Directory.GetDirectories(modsDir))
         {
             if (File.Exists(Path.Combine(top, "mod.yml")))
             {

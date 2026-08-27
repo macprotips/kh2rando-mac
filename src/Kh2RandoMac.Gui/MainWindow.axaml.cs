@@ -73,15 +73,23 @@ public partial class MainWindow : Window
         _ = RefreshAllAsync();
     }
 
-    /// <summary>Install dropped/opened mod or seed files (window drop and dock-icon drop both land here).</summary>
+    /// <summary>Install dropped/opened mods, seeds, or folders (window drop and dock-icon drop both land here).</summary>
     public async Task InstallFilesAsync(IReadOnlyList<string> paths)
     {
+        // Folders are handled first: an exported setup or a single mod folder.
+        foreach (var folder in paths.Where(Directory.Exists))
+        {
+            await ImportFolderAsync(folder);
+            return;
+        }
+
         var installable = paths
             .Where(p => InstallableExtensions.Any(ext => p.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
             .ToList();
         if (installable.Count == 0)
         {
-            Log("No installable files dropped. Supported: .zip, .kh2pcpatch, .lua");
+            Log("Nothing installable dropped. Drop a .zip, .kh2pcpatch, or .lua file,");
+            Log("a mod folder, or a folder exported by the Export button.");
             return;
         }
         await RunTask($"Install {installable.Count} file(s)", () => Task.Run(() =>
@@ -97,6 +105,51 @@ public partial class MainWindow : Window
             }
             Log("Enabled. Click Build to apply.");
         }));
+    }
+
+    /// <summary>Import a dropped folder: an exported setup, or a single mod.</summary>
+    private async Task ImportFolderAsync(string folder)
+    {
+        switch (ImportService.Identify(folder))
+        {
+            case FolderKind.SingleMod:
+            {
+                await RunTask($"Import {Path.GetFileName(folder)}", () => Task.Run(() =>
+                {
+                    var name = ImportService.ImportSingleMod(_workspace, folder, Log);
+                    new ModsService(_workspace).SetEnabled(name, true);
+                    Log("Enabled. Click Build to apply.");
+                    WarnIfKnownIssue(name);
+                }));
+                return;
+            }
+            case FolderKind.Export:
+            {
+                var mods = ImportService.Preview(folder);
+                var clashes = mods.Count(m => Directory.Exists(_workspace.ModPath(m)));
+                var hasOrder = File.Exists(Path.Combine(folder, ExportService.OrderFileName));
+                var message =
+                    $"This folder holds {mods.Count} mod(s)." +
+                    (clashes > 0 ? $" {clashes} of them replace a mod you already have." : "") +
+                    (hasOrder
+                        ? " It also carries a load order, which will replace yours. Your current order is kept as a .bak file."
+                        : "");
+                if (!await ConfirmAsync("Import mods", message, "Import"))
+                    return;
+                await RunTask("Import mods", () => Task.Run(() =>
+                {
+                    var count = ImportService.Import(_workspace, folder, hasOrder, Log);
+                    Log($"Imported {count} mod(s). Click Build to apply.");
+                    foreach (var note in KnownIssues.ForEnabled(_workspace))
+                        Log("WARNING: " + note);
+                }));
+                return;
+            }
+            default:
+                Log($"'{Path.GetFileName(folder)}' is not a mod folder or an export.");
+                Log("A mod folder has a mod.yml in it; an export has a 'mods' folder in it.");
+                return;
+        }
     }
 
     private void Log(string message)

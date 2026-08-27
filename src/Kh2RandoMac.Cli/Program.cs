@@ -18,6 +18,7 @@ try
         "list" => ListMods(),
         "build" => Build(),
         "export" => Export(rest),
+        "import" => Import(rest),
         "run" => Run(),
         "movies" => Movies(rest),
         "tracker" => await Tracker(),
@@ -66,6 +67,7 @@ static int Help()
                                     (no mods enabled = clean vanilla build)
           export <folder>           Copy all installed mods and the load order into a
                                     folder, for a backup or to share a setup
+          import <folder>           Install an exported folder, or a single mod folder
 
         Game:
           run                       Launch KH 1.5+2.5 through CrossOver
@@ -374,6 +376,25 @@ static int Export(string[] rest)
     var (_, workspace) = LoadConfigured();
     var count = ExportService.Export(workspace, rest[0], Say);
     Say($"Exported {count} mod(s) and the load order to {rest[0]}");
+    return 0;
+}
+
+static int Import(string[] rest)
+{
+    if (rest.Length == 0)
+        throw new InvalidOperationException("Usage: kh2rando import <folder>");
+    var (_, workspace) = LoadConfigured();
+    var folder = rest[0];
+    if (ImportService.Identify(folder) == FolderKind.SingleMod)
+    {
+        var name = ImportService.ImportSingleMod(workspace, folder, Say);
+        new ModsService(workspace).SetEnabled(name, true);
+        Say($"Enabled '{name}'. Run 'kh2rando build' to apply.");
+        return 0;
+    }
+    var order = File.Exists(Path.Combine(folder, ExportService.OrderFileName));
+    var count = ImportService.Import(workspace, folder, order, Say);
+    Say($"Imported {count} mod(s). Run 'kh2rando build' to apply.");
     return 0;
 }
 
