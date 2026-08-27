@@ -55,8 +55,14 @@ public class Bottle
         }
     }
 
-    /// <summary>The CrossOver app that owns this bottle.</summary>
-    public string? OwningApp => CrossOverApp.AppPathForVersion(CrossOverVersion);
+    /// <summary>
+    /// An explicit CrossOver choice, when the user has more than one installed and
+    /// picked one. Set by Resolve from the saved config.
+    /// </summary>
+    public string? PreferredApp { get; init; }
+
+    /// <summary>The CrossOver app to run this bottle with.</summary>
+    public string? OwningApp => CrossOverApp.AppPathForVersion(CrossOverVersion, PreferredApp);
 
     public static string BottlesRoot => CrossOverApp.BottlesRoot;
 
@@ -104,8 +110,18 @@ public class Bottle
                     WrapperApp = config.WrapperApp,
                 };
         }
-        return Get(config.BottleName)
+        var bottle = Get(config.BottleName)
             ?? throw new InvalidOperationException($"Bottle '{config.BottleName}' not found.");
+        return config.CrossOverAppPath == null
+            ? bottle
+            : new Bottle
+            {
+                Name = bottle.Name,
+                Root = bottle.Root,
+                Platform = bottle.Platform,
+                WrapperApp = bottle.WrapperApp,
+                PreferredApp = config.CrossOverAppPath,
+            };
     }
 
     private Dictionary<char, string>? _driveMappings;

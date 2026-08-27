@@ -70,7 +70,37 @@ public partial class MainWindow : Window
             await InstallFilesAsync(paths);
         });
 
+        SetUpCrossOverPicker();
         _ = RefreshAllAsync();
+    }
+
+    /// <summary>
+    /// Several CrossOver copies share the same bottles, and a bottle can only be run by
+    /// a copy its own age or newer. The app works out which one to use; this only
+    /// appears when there is a choice to make.
+    /// </summary>
+    private void SetUpCrossOverPicker()
+    {
+        var installed = CrossOverApp.Installed();
+        if (installed.Count < 2)
+            return;
+
+        var options = new List<string> { "Automatic" };
+        options.AddRange(installed.Select(a => CrossOverApp.DescribeApp(a.Path)));
+        CrossOverPicker.ItemsSource = options;
+        var chosen = installed.FindIndex(a => a.Path == _config.CrossOverAppPath);
+        CrossOverPicker.SelectedIndex = chosen >= 0 ? chosen + 1 : 0;
+        CrossOverRow.IsVisible = true;
+
+        CrossOverPicker.SelectionChanged += (_, _) =>
+        {
+            var i = CrossOverPicker.SelectedIndex;
+            _config.CrossOverAppPath = i <= 0 ? null : installed[i - 1].Path;
+            _config.Save();
+            Log(i <= 0
+                ? "CrossOver: automatic, matched to the bottle."
+                : $"CrossOver: {CrossOverApp.DescribeApp(installed[i - 1].Path)}.");
+        };
     }
 
     /// <summary>Install dropped/opened mods, seeds, or folders (window drop and dock-icon drop both land here).</summary>

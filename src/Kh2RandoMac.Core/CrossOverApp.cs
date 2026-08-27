@@ -20,19 +20,42 @@ public static class CrossOverApp
     private static string? BundleVersion(string appPath) =>
         ReadDefault(Path.Combine(appPath, "Contents", "Info.plist"), "CFBundleVersion");
 
-    /// <summary>
-    /// The CrossOver that owns a bottle. Stable and Preview can both be installed, and
-    /// a bottle records the version that last touched it: running a Preview-upgraded
-    /// bottle with the older stable build fails with "failed to load start.exe" and a
-    /// bottle-update error. Matches on version, falling back to whatever is installed.
-    /// </summary>
-    public static string? AppPathForVersion(string? bottleVersion)
+    /// <summary>Every CrossOver installed, newest first, with its version.</summary>
+    public static List<(string Path, Version Version)> Installed() =>
+        CandidateApps.Where(Directory.Exists)
+            .Select(a => (Path: a, Version: Version.TryParse(BundleVersion(a) ?? "", out var v) ? v : new Version(0, 0)))
+            .OrderByDescending(a => a.Version)
+            .ToList();
+
+    /// <summary>A short label for a menu, e.g. "CrossOver Preview (27.0.0)".</summary>
+    public static string DescribeApp(string appPath)
     {
-        var installed = CandidateApps.Where(Directory.Exists).ToList();
-        if (bottleVersion == null || installed.Count < 2)
-            return installed.FirstOrDefault();
-        return installed.FirstOrDefault(a => BundleVersion(a) == bottleVersion)
-            ?? installed.FirstOrDefault();
+        var name = Path.GetFileNameWithoutExtension(appPath);
+        var v = BundleVersion(appPath);
+        return v == null ? name : $"{name} ({v})";
+    }
+
+    /// <summary>
+    /// The CrossOver to run a bottle with. A copy can open a bottle its own age or
+    /// older, upgrading it on the way, but never one from a newer version: that fails
+    /// with "failed to load start.exe" and a bottle-update error. So pick the oldest
+    /// copy that is still new enough, which runs the bottle without dragging it up to
+    /// a newer version and locking the older copy out of it. Falls back to the newest
+    /// installed when the bottle is newer than anything here, which at least reports a
+    /// real error instead of a confusing one.
+    /// </summary>
+    public static string? AppPathForVersion(string? bottleVersion, string? preferred = null)
+    {
+        var installed = Installed();
+        if (installed.Count == 0)
+            return null;
+        // An explicit choice wins, as long as it is still installed.
+        if (preferred != null && installed.Any(a => a.Path == preferred))
+            return preferred;
+        if (bottleVersion == null || !Version.TryParse(bottleVersion, out var needed))
+            return installed[0].Path;
+        var capable = installed.Where(a => a.Version >= needed).ToList();
+        return capable.Count > 0 ? capable[^1].Path : installed[0].Path;
     }
 
     private static string Bin(string tool) => Bin(tool, AppPath);

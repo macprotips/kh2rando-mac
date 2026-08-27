@@ -24,6 +24,12 @@ public class AppConfig
     /// <summary>The Sikarugir wrapper .app when the game runs through one; null for CrossOver.</summary>
     public string? WrapperApp { get; set; }
 
+    /// <summary>
+    /// Which CrossOver to use, when more than one is installed and they share bottles.
+    /// Null means work it out from the bottle's own recorded version.
+    /// </summary>
+    public string? CrossOverAppPath { get; set; }
+
     private string _launcher = "Steam";
     /// <summary>"Steam" or "EGS", normalized on assignment so case/synonyms can't break comparisons.</summary>
     public string Launcher

@@ -73,6 +73,14 @@
                        VerticalAlignment="Top" Margin="0,1,0,0"/>
             <TextBlock Grid.Column="2" x:Name="DataStatusText" FontSize="13" TextWrapping="Wrap"/>
           </Grid>
+          <!-- Only shown when more than one CrossOver is installed; they share bottles,
+               and a bottle can only be run by a copy its own age or newer. -->
+          <Grid x:Name="CrossOverRow" ColumnDefinitions="Auto,96,*" IsVisible="False">
+            <TextBlock Grid.Column="1" Text="CrossOver" FontSize="13" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="2" x:Name="CrossOverPicker" FontSize="12"
+                      ToolTip.Tip="You have more than one CrossOver installed and they share bottles. The app picks the right one for your bottle; change it here if you want a specific copy."/>
+          </Grid>
         </StackPanel>
 
         <!-- Grouped left to right: one-time setup, upkeep, then diagnostics and the
