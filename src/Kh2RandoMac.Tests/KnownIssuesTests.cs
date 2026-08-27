@@ -22,7 +22,6 @@ public class KnownIssuesTests : IDisposable
     [Theory]
     [InlineData("thenja09/mastertreasuremagnet")]
     [InlineData("THENJA09/MasterTreasureMagnet")]
-    [InlineData("SapphireSapphic/FormMovementPlusPlus")]
     public void For_FlagsConfirmedBadMods(string mod)
     {
         var note = KnownIssues.For(mod);
@@ -32,6 +31,7 @@ public class KnownIssuesTests : IDisposable
 
     [Theory]
     [InlineData("KH2FM-Mods-Num/GoA-ROM-Edition")]
+    [InlineData("SapphireSapphic/FormMovementPlusPlus")]
     [InlineData("randoseed")]
     [InlineData(null)]
     public void For_LeavesEverythingElseAlone(string? mod)

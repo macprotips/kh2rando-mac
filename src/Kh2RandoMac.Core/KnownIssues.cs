@@ -1,8 +1,8 @@
 namespace Kh2RandoMac.Core;
 
 /// <summary>
-/// Mods confirmed here to misbehave on current game builds. Entries are things that
-/// were reproduced and traced, not rumours, and each note says what actually goes
+/// Mods confirmed here to break current game builds. An entry earns its place only by
+/// being reproduced, not by looking suspicious in review, and the note says what goes
 /// wrong so the player can judge it. These warn and never block: someone may have a
 /// reason to run one anyway, and a fixed version can appear at any time.
 /// </summary>
@@ -15,10 +15,6 @@ public static class KnownIssues
             "before the Steam release and writes to the wrong place in memory every frame, with " +
             "no check to stop it. The mod has not been updated since 2023. Leave it off unless a " +
             "fixed version appears.",
-        ["SapphireSapphic/FormMovementPlusPlus"] =
-            "Form Movement++ can freeze the game. It was built for a version of KH2 from before " +
-            "the Steam release and has no version check, so it may write to the wrong place in " +
-            "memory. The mod has not been updated since 2022.",
     };
 
     /// <summary>The warning for a mod, or null when nothing is known against it.</summary>
