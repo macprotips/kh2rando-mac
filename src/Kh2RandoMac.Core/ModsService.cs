@@ -216,7 +216,7 @@ public class ModsService
             throw new InvalidOperationException($"'{modName}' was not installed from GitHub, so it can't be updated this way.");
         using var repo = new Repository(path);
         if (repo.Info.IsHeadDetached)
-            throw new InvalidOperationException($"'{modName}' is not on a branch; remove and reinstall it.");
+            throw new InvalidOperationException($"'{modName}' cannot be updated in place. Remove it and install it again.");
         progress?.Invoke($"Updating {modName}...");
         FetchOrigin(repo);
         repo.Reset(ResetMode.Hard, repo.Head.TrackedBranch.Tip, new CheckoutOptions

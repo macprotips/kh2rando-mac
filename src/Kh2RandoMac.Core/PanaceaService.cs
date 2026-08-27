@@ -97,7 +97,7 @@ public class PanaceaService
     {
         var payload = PayloadDir;
         if (!PayloadComplete)
-            throw new InvalidOperationException("Panacea payload not downloaded (or incomplete), run EnsurePayload first.");
+            throw new InvalidOperationException("The mod loader files are missing or incomplete. Run Setup again to re-download them.");
 
         File.Copy(Path.Combine(payload, PanaceaDllName), Path.Combine(gameDir, "version.dll"), true);
         // Remove the alternate name if a previous install used it, so only one copy loads.

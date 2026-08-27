@@ -489,7 +489,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            Log("Run Setup first; the FPS HUD is a per-bottle setting.");
+            Log("Run Setup first so the app knows which bottle to change.");
             return;
         }
         var current = MetalHudService.IsEnabled(bottle);
@@ -499,11 +499,14 @@ public partial class MainWindow : Window
             return;
         }
         var turningOn = current != true;
+        var action = turningOn ? "Turn On" : "Turn Off";
         var confirmed = await ConfirmAsync(
             turningOn ? "Turn on the FPS HUD" : "Turn off the FPS HUD",
-            $"This affects the '{bottle.Name}' bottle only, nothing else on your Mac. " +
-            "Quit CrossOver and Steam first, then start them again for the change to take effect.",
-            turningOn ? "Turn On" : "Turn Off");
+            $"This affects the '{bottle.Name}' bottle only, nothing else on your Mac.\n\n" +
+            $"1. Quit CrossOver and Steam if they are open.\n" +
+            $"2. Click {action}.\n" +
+            $"3. Start Steam and the game again. The overlay {(turningOn ? "appears" : "is gone")} from then on.",
+            action);
         if (!confirmed)
             return;
         try
@@ -511,8 +514,8 @@ public partial class MainWindow : Window
             MetalHudService.SetEnabled(bottle, turningOn);
             HudButton.Content = turningOn ? "FPS HUD: On" : "FPS HUD: Off";
             Log(turningOn
-                ? "FPS HUD on for this bottle. Relaunch CrossOver and Steam, then start the game to see it."
-                : "FPS HUD off for this bottle. Relaunch CrossOver and Steam for it to disappear.");
+                ? "FPS HUD on for this bottle. Start Steam and the game to see it."
+                : "FPS HUD off for this bottle. Start Steam and the game to see it gone.");
         }
         catch (Exception ex)
         {
@@ -534,7 +537,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            Log("Run Setup first; the tracker runs inside the game's bottle.");
+            Log("Run Setup first so the app knows which bottle to run the tracker in.");
             return;
         }
         if (bottle.Platform != WinePlatform.CrossOver)
@@ -737,8 +740,8 @@ public partial class MainWindow : Window
             "..", "Resources", "seedgen-setup", "setup-seed-generator.sh"));
         if (!File.Exists(script))
         {
-            Log("Seed Generator not installed yet. Run 'bash tools/setup-seed-generator.sh' from");
-            Log("the project folder (see docs/SETUP.md, Part 5).");
+            Log("This copy of the app is missing its Seed Generator installer, which means");
+            Log("the download was incomplete. Re-download the app from the releases page.");
             return;
         }
         await RunTask("Install Seed Generator (a few minutes)", () => Task.Run(() =>
@@ -819,7 +822,7 @@ public partial class MainWindow : Window
         await RunTask("Build", () => Task.Run(() =>
         {
             BuildCore();
-            Log("Build complete ✓, launch the game through CrossOver whenever you like.");
+            Log("Build complete ✓. Launch the game through CrossOver, then start a New Game.");
         }));
     }
 

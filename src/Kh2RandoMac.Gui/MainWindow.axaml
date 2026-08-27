@@ -106,9 +106,16 @@
       <Button x:Name="InstallZipButton" Grid.Column="2" Content="Install Mod / Seed File…" Margin="6,0,0,0" Click="OnInstallZip"
               ToolTip.Tip="Installs a seed zip, mod zip, .kh2pcpatch, or .lua script. Dragging files onto the window does the same."/>
       <Border Grid.Column="3" Classes="divider" Margin="9,2"/>
-      <Button x:Name="InstallGoaButton" Grid.Column="4" Content="⭐ Install GoA" Click="OnInstallGoa"
-              ToolTip.Tip="Installs Garden of Assemblage, the base mod every randomizer seed needs."/>
-      <Button x:Name="InstallRefinedButton" Grid.Column="5" Content="Install Re:Fined" Margin="6,0,0,0" Click="OnInstallRefined"
+      <!-- The star sits in its own sized TextBlock: as button Content the emoji's
+           taller line metrics stretch the button out of line with its neighbour. -->
+      <Button x:Name="InstallGoaButton" Grid.Column="4" MinWidth="152" HorizontalContentAlignment="Center" Click="OnInstallGoa"
+              ToolTip.Tip="Installs Garden of Assemblage, the base mod every randomizer seed needs.">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+          <TextBlock Text="⭐" FontSize="11" VerticalAlignment="Center"/>
+          <TextBlock Text="Install GoA" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+      <Button x:Name="InstallRefinedButton" Grid.Column="5" MinWidth="152" Content="Install Re:Fined" Margin="6,0,0,0" Click="OnInstallRefined"
               ToolTip.Tip="Installs Re:Fined, a quality-of-life overhaul with skippable cutscenes, soft reset, and a prologue skip. Works on its own or alongside a seed. Large download."/>
     </Grid>
 
@@ -137,7 +144,7 @@
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Name}" FontSize="11" Opacity="0.6"/>
                   </StackPanel>
-                  <Button Grid.Column="2" Classes="reorder" Content="⤒"
+                  <Button Grid.Column="2" Classes="reorder" Content="Top"
                           Click="OnMoveToTop" Tag="{Binding}"
                           ToolTip.Tip="Move to the top."/>
                   <Button Grid.Column="3" Classes="reorder" Content="▲"
@@ -146,7 +153,7 @@
                   <Button Grid.Column="4" Classes="reorder" Content="▼"
                           Click="OnMoveDown" Tag="{Binding}"
                           ToolTip.Tip="Move down."/>
-                  <Button Grid.Column="5" Classes="reorder" Content="⤓"
+                  <Button Grid.Column="5" Classes="reorder" Content="Bottom"
                           Click="OnMoveToBottom" Tag="{Binding}"
                           ToolTip.Tip="Move to the bottom."/>
                   <Border Grid.Column="6" Classes="divider" Margin="6,4"/>
@@ -166,7 +173,7 @@
                 Spacing="7" Margin="0,16,0,16">
       <Button x:Name="HudButton" Content="FPS HUD: Off" Padding="14,8"
               Click="OnToggleHud"
-              ToolTip.Tip="Shows an FPS overlay in the game. Quit CrossOver and Steam before clicking, then start them again."/>
+              ToolTip.Tip="Shows an FPS overlay in the game. Quit CrossOver and Steam before turning it on."/>
       <Button x:Name="MoviesButton" Content="Movies: On" Padding="14,8"
               Click="OnToggleMovies"
               ToolTip.Tip="Movie cutscenes crash the game under CrossOver. Skipping them avoids the crash. Click again to put them back."/>
