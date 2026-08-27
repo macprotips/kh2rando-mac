@@ -115,4 +115,26 @@ public class BottleTests
         var capable = byNewest.Where(v => v >= needed).ToList();
         return capable.Count > 0 ? capable[^1] : byNewest[0];
     }
+
+    [Fact]
+    public void DescribeAll_GivesEveryCopyADistinctLabel()
+    {
+        // Real machine: five copies, two pairs sharing a name and version, and two of
+        // those in folders that both end in "Applications".
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var apps = new List<(string Path, Version Version)>
+        {
+            ("/Applications/CrossOver Preview.app", new Version("27.0.0.40817")),
+            (Path.Combine(home, "Downloads", "CrossOver Preview.app"), new Version("27.0.0.40817")),
+            ("/Applications/CrossOver.app", new Version("26.3.0.39832")),
+            (Path.Combine(home, "Applications", "CrossOver.app"), new Version("26.3.0.39832")),
+            (Path.Combine(home, "Downloads", "CrossOver 2.app"), new Version("26.3.0.39832")),
+        };
+
+        var labels = CrossOverApp.DescribeAll(apps);
+
+        Assert.Equal(apps.Count, labels.Count);
+        Assert.Equal(labels.Count, labels.Distinct().Count());
+        Assert.All(labels, l => Assert.False(string.IsNullOrWhiteSpace(l)));
+    }
 }

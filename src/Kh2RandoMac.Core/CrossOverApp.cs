@@ -5,16 +5,73 @@ namespace Kh2RandoMac.Core;
 /// <summary>Locates the CrossOver installation (regular or Preview) and its CLI tools.</summary>
 public static class CrossOverApp
 {
-    private static readonly string[] CandidateApps =
+    public const string BundleId = "com.codeweavers.CrossOver";
+
+    /// <summary>Folders people keep applications in; copies elsewhere are found by Spotlight.</summary>
+    private static readonly string[] SearchDirs =
     {
-        "/Applications/CrossOver.app",
-        "/Applications/CrossOver Preview.app",
+        "/Applications",
+        "/Applications/CrossOver",
     };
 
-    public static string? AppPath =>
-        CandidateApps.FirstOrDefault(Directory.Exists);
+    /// <summary>A folder is a CrossOver install only if it can actually run something.</summary>
+    private static bool IsCrossOver(string appPath) =>
+        File.Exists(Path.Combine(appPath, "Contents", "SharedSupport", "CrossOver", "bin", "wine"));
 
-    public static bool IsInstalled => AppPath != null;
+    private static readonly Lazy<List<string>> _discovered = new(DiscoverApps);
+
+    /// <summary>
+    /// Every CrossOver on the machine, wherever it lives. People keep older versions
+    /// beside the current one, rename them, and install to their home folder, so a
+    /// fixed list of paths misses copies they are entitled to use. Spotlight finds
+    /// them by bundle id; the directory scan covers the case where it is unavailable.
+    /// Cached: this shells out, and installs do not appear mid-session.
+    /// </summary>
+    private static List<string> DiscoverApps()
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        foreach (var dir in SearchDirs.Concat(new[] { Path.Combine(home, "Applications") }))
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    foreach (var app in Directory.EnumerateDirectories(dir, "*.app"))
+                        if (IsCrossOver(app))
+                            found.Add(app);
+            }
+            catch
+            {
+                // Unreadable folder: the other sources still apply.
+            }
+        }
+        foreach (var app in Spotlight($"kMDItemCFBundleIdentifier == '{BundleId}'"))
+            if (IsCrossOver(app))
+                found.Add(app);
+        return found.ToList();
+    }
+
+    private static List<string> Spotlight(string query)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("/usr/bin/mdfind") { RedirectStandardOutput = true };
+            psi.ArgumentList.Add(query);
+            using var p = Process.Start(psi);
+            if (p == null)
+                return new List<string>();
+            var lines = p.StandardOutput.ReadToEnd()
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim())
+                .ToList();
+            p.WaitForExit(5000);
+            return lines;
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
 
     /// <summary>A CrossOver app's full version, e.g. "27.0.0.40817".</summary>
     private static string? BundleVersion(string appPath) =>
@@ -22,17 +79,59 @@ public static class CrossOverApp
 
     /// <summary>Every CrossOver installed, newest first, with its version.</summary>
     public static List<(string Path, Version Version)> Installed() =>
-        CandidateApps.Where(Directory.Exists)
+        _discovered.Value
             .Select(a => (Path: a, Version: Version.TryParse(BundleVersion(a) ?? "", out var v) ? v : new Version(0, 0)))
             .OrderByDescending(a => a.Version)
+            .ThenBy(a => a.Path, StringComparer.Ordinal)
             .ToList();
 
-    /// <summary>A short label for a menu, e.g. "CrossOver Preview (27.0.0)".</summary>
-    public static string DescribeApp(string appPath)
+    /// <summary>The newest CrossOver installed, used when no bottle is in play.</summary>
+    public static string? AppPath => Installed().FirstOrDefault().Path;
+
+    public static bool IsInstalled => Installed().Count > 0;
+
+    /// <summary>
+    /// Labels for a menu, disambiguated only where they need to be. Several copies of
+    /// the same version, or the same name in different folders, are common once people
+    /// keep old releases around.
+    /// </summary>
+    public static List<string> DescribeAll(IReadOnlyList<(string Path, Version Version)> apps)
     {
-        var name = Path.GetFileNameWithoutExtension(appPath);
-        var v = BundleVersion(appPath);
-        return v == null ? name : $"{name} ({v})";
+        var labels = apps
+            .Select(a => $"{Path.GetFileNameWithoutExtension(a.Path)} ({BundleVersion(a.Path) ?? a.Version.ToString()})")
+            .ToList();
+        // Add the location to any label that appears more than once, then fall back to
+        // the full path if two are somehow still identical. A menu of choices that read
+        // the same is worse than no menu.
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var duplicated = labels.GroupBy(l => l).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
+            if (duplicated.Count == 0)
+                break;
+            for (var i = 0; i < labels.Count; i++)
+            {
+                if (!duplicated.Contains(labels[i]))
+                    continue;
+                labels[i] = pass == 0
+                    ? $"{labels[i]} in {LocationLabel(apps[i].Path)}"
+                    : apps[i].Path;
+            }
+        }
+        return labels;
+    }
+
+    /// <summary>Where a copy lives, in words someone would recognise in a menu.</summary>
+    private static string LocationLabel(string appPath)
+    {
+        var dir = Path.GetDirectoryName(appPath) ?? "";
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (dir == "/Applications")
+            return "Applications";
+        if (dir == Path.Combine(home, "Applications"))
+            return "your Applications folder";
+        if (dir == Path.Combine(home, "Downloads"))
+            return "Downloads";
+        return Path.GetFileName(dir) is { Length: > 0 } name ? name : dir;
     }
 
     /// <summary>
@@ -55,7 +154,27 @@ public static class CrossOverApp
         if (bottleVersion == null || !Version.TryParse(bottleVersion, out var needed))
             return installed[0].Path;
         var capable = installed.Where(a => a.Version >= needed).ToList();
-        return capable.Count > 0 ? capable[^1].Path : installed[0].Path;
+        if (capable.Count == 0)
+            return installed[0].Path;
+        // Oldest capable copy, so the bottle is not dragged to a newer version; among
+        // copies of that same version, the one in a real applications folder rather
+        // than a leftover in Downloads or on a disk image.
+        var oldest = capable.Min(a => a.Version);
+        return capable.Where(a => a.Version == oldest)
+            .OrderBy(a => LocationRank(a.Path))
+            .First().Path;
+    }
+
+    /// <summary>Lower is more likely to be the copy someone actually uses.</summary>
+    private static int LocationRank(string appPath)
+    {
+        var dir = Path.GetDirectoryName(appPath) ?? "";
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (dir == "/Applications")
+            return 0;
+        if (dir == Path.Combine(home, "Applications"))
+            return 1;
+        return dir.StartsWith(Path.Combine(home, "Downloads"), StringComparison.Ordinal) ? 3 : 2;
     }
 
     private static string Bin(string tool) => Bin(tool, AppPath);

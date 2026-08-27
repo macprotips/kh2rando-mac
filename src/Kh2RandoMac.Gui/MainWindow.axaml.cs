@@ -86,7 +86,7 @@ public partial class MainWindow : Window
             return;
 
         var options = new List<string> { "Automatic" };
-        options.AddRange(installed.Select(a => CrossOverApp.DescribeApp(a.Path)));
+        options.AddRange(CrossOverApp.DescribeAll(installed));
         CrossOverPicker.ItemsSource = options;
         var chosen = installed.FindIndex(a => a.Path == _config.CrossOverAppPath);
         CrossOverPicker.SelectedIndex = chosen >= 0 ? chosen + 1 : 0;
@@ -103,7 +103,7 @@ public partial class MainWindow : Window
                 return;
             }
             var chosenApp = installed[i - 1];
-            Log($"CrossOver: {CrossOverApp.DescribeApp(chosenApp.Path)}.");
+            Log($"CrossOver: {chosenApp.Path}");
 
             // A bottle upgraded by a newer copy cannot be opened by an older one, and
             // the failure is a cryptic "failed to load start.exe" rather than anything
