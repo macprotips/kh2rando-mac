@@ -33,12 +33,35 @@ public static class GitHubApi
         return new Release(root.GetProperty("tag_name").GetString() ?? "?", assets);
     }
 
+    /// <summary>
+    /// Download to a temporary file and move it into place only once it is complete.
+    /// Callers treat File.Exists(destination) as "already downloaded", so a connection
+    /// dropped mid-download used to leave a truncated file that every retry accepted.
+    /// </summary>
     public static async Task DownloadFile(string url, string destination)
     {
         using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        await using var output = File.Create(destination);
-        await response.Content.CopyToAsync(output);
+        var partial = destination + ".part";
+        try
+        {
+            await using (var output = File.Create(partial))
+                await response.Content.CopyToAsync(output);
+
+            var expected = response.Content.Headers.ContentLength;
+            var actual = new FileInfo(partial).Length;
+            if (expected.HasValue && actual != expected.Value)
+                throw new IOException(
+                    $"Download of {Path.GetFileName(destination)} was cut short " +
+                    $"({actual} of {expected.Value} bytes). Check your connection and try again.");
+
+            File.Move(partial, destination, true);
+        }
+        finally
+        {
+            if (File.Exists(partial))
+                File.Delete(partial);
+        }
     }
 }

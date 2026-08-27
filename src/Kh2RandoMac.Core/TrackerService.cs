@@ -307,6 +307,8 @@ public class TrackerService
         return result;
     }
 
+    private static string Tail(string s, int max = 400) => s.Length > max ? s[^max..] : s;
+
     /// <summary>Run a wine builtin (uninstaller, winecfg) in the bottle and return its output.</summary>
     private static string RunWine(Bottle bottle, Action<string> log, bool quiet, params string[] args)
     {
@@ -321,9 +323,14 @@ public class TrackerService
         foreach (var a in args)
             psi.ArgumentList.Add(a);
         using var p = Process.Start(psi)!;
-        var output = p.StandardOutput.ReadToEnd();
-        var stderr = p.StandardError.ReadToEnd();
+        // Both pipes must be drained concurrently: Wine writes a steady stream of
+        // fixme/err chatter to stderr, and reading stdout to completion first
+        // deadlocks once that pipe fills, which hangs the whole install.
+        var stdoutTask = p.StandardOutput.ReadToEndAsync();
+        var stderrTask = p.StandardError.ReadToEndAsync();
         p.WaitForExit();
+        var output = stdoutTask.GetAwaiter().GetResult();
+        var stderr = stderrTask.GetAwaiter().GetResult();
         var tail = stderr.Length > 400 ? stderr[^400..] : stderr;
         FileLog.Write($"[tracker] wine {args.FirstOrDefault()} exit={p.ExitCode} stderr: {tail.Trim()}");
         if (!quiet)
@@ -348,9 +355,14 @@ public class TrackerService
         foreach (var a in args)
             psi.ArgumentList.Add(a);
         using var p = Process.Start(psi)!;
-        p.StandardOutput.ReadToEnd();
-        p.StandardError.ReadToEnd();
+        // Drain both pipes concurrently; the .NET Framework installer runs for
+        // minutes and Wine fills stderr while it does.
+        var stdoutTask = p.StandardOutput.ReadToEndAsync();
+        var stderrTask = p.StandardError.ReadToEndAsync();
         p.WaitForExit();
+        FileLog.Write($"[tracker] installer stderr tail: " +
+            Tail(stderrTask.GetAwaiter().GetResult()));
+        stdoutTask.GetAwaiter().GetResult();
         return p.ExitCode;
     }
 }

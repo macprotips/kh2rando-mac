@@ -95,4 +95,36 @@ public class ImportServiceTests : IDisposable
         Assert.Equal("CoolMod", name);
         Assert.Contains("CoolMod", _target.InstalledMods());
     }
+
+    [Fact]
+    public void Import_RefusesAFolderInsideTheWorkspace_TheWipeEverythingCase()
+    {
+        // Dragging in the app's own mods folder used to delete every file it was
+        // about to copy and then report success.
+        FakeMod(_target, "author/one", "keep me");
+        FakeMod(_target, "two", "keep me too");
+
+        Assert.Throws<InvalidOperationException>(
+            () => ImportService.Import(_target, _target.ModsDir, applyLoadOrder: false));
+        Assert.Throws<InvalidOperationException>(
+            () => ImportService.ImportSingleMod(_target, _target.ModPath("two")));
+
+        Assert.Equal(new[] { "author/one", "two" }, _target.InstalledMods().OrderBy(m => m));
+        Assert.Equal("keep me", File.ReadAllText(
+            Path.Combine(_target.ModPath("author/one"), "nested", "data.txt")));
+    }
+
+    [Fact]
+    public void Import_LeavesNoStagingFolderBehind()
+    {
+        FakeMod(_source, "one", "new");
+        var box = Path.Combine(_root, "box");
+        Directory.CreateDirectory(box);
+        var made = ExportService.Export(_source, box);
+
+        ImportService.Import(_target, made, applyLoadOrder: false);
+
+        Assert.Empty(Directory.GetDirectories(_target.ModsDir, "*.importing", SearchOption.AllDirectories));
+        Assert.Equal(new[] { "one" }, _target.InstalledMods());
+    }
 }

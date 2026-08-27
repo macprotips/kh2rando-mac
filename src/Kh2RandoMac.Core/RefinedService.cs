@@ -98,9 +98,13 @@ public class RefinedService
         foreach (var a in args)
             psi.ArgumentList.Add(a);
         using var p = Process.Start(psi)!;
-        p.StandardOutput.ReadToEnd();
-        var stderr = p.StandardError.ReadToEnd();
+        // Both pipes must be drained concurrently: this installer runs for minutes
+        // and Wine fills stderr while it does, which deadlocks a sequential read.
+        var stdoutTask = p.StandardOutput.ReadToEndAsync();
+        var stderrTask = p.StandardError.ReadToEndAsync();
         p.WaitForExit();
+        stdoutTask.GetAwaiter().GetResult();
+        var stderr = stderrTask.GetAwaiter().GetResult();
         var tail = stderr.Length > 400 ? stderr[^400..] : stderr;
         FileLog.Write($"[refined] installer stderr: {tail.Trim()}");
         return p.ExitCode;

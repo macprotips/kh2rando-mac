@@ -18,6 +18,20 @@ public enum FolderKind
 /// </summary>
 public static class ImportService
 {
+    /// <summary>
+    /// Refuse a source that lives inside the workspace's own mods folder. Import
+    /// deletes the destination before copying, so importing a folder from in there
+    /// would delete the very files it is about to copy and report success.
+    /// </summary>
+    private static void RefuseSourceInsideWorkspace(Workspace workspace, string source)
+    {
+        var mods = Path.GetFullPath(workspace.ModsDir).TrimEnd(Path.DirectorySeparatorChar);
+        var from = Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar);
+        if (from == mods || from.StartsWith(mods + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "That folder is already inside the app's own mods folder, so there is nothing to import.");
+    }
+
     public static FolderKind Identify(string folder)
     {
         if (!Directory.Exists(folder))
@@ -48,6 +62,7 @@ public static class ImportService
     /// </summary>
     public static int Import(Workspace workspace, string folder, bool applyLoadOrder, Action<string>? log = null)
     {
+        RefuseSourceInsideWorkspace(workspace, folder);
         var modsDir = ModsDirOf(folder);
         var mods = Workspace.ScanMods(modsDir);
         if (mods.Count == 0)
@@ -57,10 +72,9 @@ public static class ImportService
         foreach (var mod in mods)
         {
             log?.Invoke($"Importing {mod}...");
-            var destination = workspace.ModPath(mod);
-            if (Directory.Exists(destination))
-                Directory.Delete(destination, true);
-            CopyDirectory(Path.Combine(modsDir, mod.Replace('/', Path.DirectorySeparatorChar)), destination);
+            ReplaceDirectory(
+                Path.Combine(modsDir, mod.Replace('/', Path.DirectorySeparatorChar)),
+                workspace.ModPath(mod));
         }
 
         var order = Path.Combine(folder, ExportService.OrderFileName);
@@ -79,14 +93,36 @@ public static class ImportService
     {
         if (!File.Exists(Path.Combine(folder, "mod.yml")))
             throw new InvalidOperationException("That folder has no mod.yml, so it is not a mod.");
+        RefuseSourceInsideWorkspace(workspace, folder);
         workspace.EnsureDirectories();
         var name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar));
-        var destination = workspace.ModPath(name);
-        if (Directory.Exists(destination))
-            Directory.Delete(destination, true);
-        CopyDirectory(folder, destination);
+        ReplaceDirectory(folder, workspace.ModPath(name));
         log?.Invoke($"Imported {name}.");
         return name;
+    }
+
+    /// <summary>
+    /// Copy alongside the destination first and only swap once it is complete, so a
+    /// failure part way (a pulled USB stick, a full disk) cannot leave the user with
+    /// neither their old mod nor the new one.
+    /// </summary>
+    private static void ReplaceDirectory(string source, string destination)
+    {
+        var staging = destination + ".importing";
+        if (Directory.Exists(staging))
+            Directory.Delete(staging, true);
+        try
+        {
+            CopyDirectory(source, staging);
+            if (Directory.Exists(destination))
+                Directory.Delete(destination, true);
+            Directory.Move(staging, destination);
+        }
+        finally
+        {
+            if (Directory.Exists(staging))
+                Directory.Delete(staging, true);
+        }
     }
 
     private static void CopyDirectory(string source, string destination)
