@@ -16,6 +16,8 @@ DEST="${1:-$HOME/KH2SeedGenerator}"
 # https://github.com/astral-sh/python-build-standalone
 PYTHON_RELEASE="20260814"
 PYTHON_BUILD="cpython-3.12.14"
+# pyinstxtractor commit to run (see the note at its download below)
+PYINSTXTRACTOR_COMMIT="815d31cf26bc71e62f851b2e549452e7b7c9dd98"
 
 say() { printf '\n==> %s\n' "$*"; }
 
@@ -52,8 +54,10 @@ else
   trap 'rm -rf "$WORK"' EXIT
   curl -sL -o "$WORK/KH2Randomizer.exe" \
     "https://github.com/tommadness/KH2Randomizer/releases/download/$GENERATOR_VERSION/KH2.Randomizer.exe"
+  # Pinned to a commit, not a branch: this script runs natively on the user's Mac,
+  # so "whatever is on master today" is not an acceptable input.
   curl -sL -o "$WORK/pyinstxtractor.py" \
-    "https://raw.githubusercontent.com/extremecoders-re/pyinstxtractor/master/pyinstxtractor.py"
+    "https://raw.githubusercontent.com/extremecoders-re/pyinstxtractor/$PYINSTXTRACTOR_COMMIT/pyinstxtractor.py"
   (cd "$WORK" && "$PYBIN" pyinstxtractor.py KH2Randomizer.exe >/dev/null 2>&1)
   if [ ! -f "$WORK/KH2Randomizer.exe_extracted/extracted_data.zip" ]; then
     echo "Could not recover extracted_data.zip, please report this."
