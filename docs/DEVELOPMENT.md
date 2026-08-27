@@ -54,11 +54,11 @@ certificate, and GitHub retired Intel macOS runners):
 
 ```bash
 git tag vX.Y.Z && git push origin vX.Y.Z
-packaging/release.sh vX.Y.Z        # build both arches, sign, notarize, upload
+packaging/release.sh vX.Y.Z        # build, sign, notarize, verify, upload
 gh release edit vX.Y.Z --draft=false
 ```
 
 One-time machine setup for releasing: arm64 .NET 8 SDK at `~/.dotnet`, x64 SDK at
 `~/.dotnet-x64` (dotnet-install.sh `--architecture x64`, needs Rosetta), a
 "Developer ID Application" certificate in the keychain, and a notarytool keychain
-profile named `kh2rando-notary`. CI (`ci.yml`) still builds and tests every push.
+profile named `kh2rando-notary`. CI (`ci.yml`) builds and tests pushes to main and every pull request.

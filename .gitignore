@@ -3,3 +3,6 @@ obj/
 dist/
 .DS_Store
 *.user
+
+# stray logs (the app logs to ~/Library/Logs)
+*.log

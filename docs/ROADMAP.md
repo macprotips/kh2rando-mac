@@ -15,7 +15,7 @@
 - [ ] Fix whatever the pilot machine shakes out
 - [ ] Recruit a few Mac testers from the KH2 Rando community Discord
 - [ ] Test matrix: Steam and EGS, internal and external drive, CrossOver and
-      CrossOver Preview, Apple Silicon and Intel builds
+      CrossOver Preview, Apple Silicon (Intel is not supported)
 - [ ] Better in-app guidance when the bottle is running during setup
 
 ## Phase 3: Public release

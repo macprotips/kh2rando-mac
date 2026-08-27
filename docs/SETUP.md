@@ -84,8 +84,8 @@ next.
 3. Click Extract Game Data. This unpacks the game's files so mods can be built
    against them. One time only, 10 to 20 minutes, about 30 GB. Leave the app open.
 
-Checkpoint: the status panel reads "Mod loader: Panacea installed, LuaBackend
-installed" and "Game data: extracted".
+Checkpoint: the status panel shows green checks against Mod loader ("Panacea and
+LuaBackend installed.") and Game data ("Extracted.").
 
 ## Part 4: Install the base mod and test it
 
@@ -137,13 +137,24 @@ every setting, the hint systems, and daily seeds.
 1. Make sure the game is closed (Steam can stay open).
 2. Drag the seed zip onto the KH2 Rando Manager window.
 3. Glance at the mod list: the seed should sit above GoA ROM Edition. It lands there
-   automatically; the top entry wins if mods conflict.
-4. Click Build, wait for "Build complete".
-5. Launch the game and start a New Game.
+   automatically; the top entry wins if mods conflict. Each row has Top, up, down,
+   and Bottom buttons if you ever need to change the order yourself.
+4. Click Build & Run, or click Build and launch the game yourself.
+5. Start a New Game.
 
 That is the whole routine from now on:
 
     generate a seed  ->  drag it in  ->  Build  ->  play
+
+## Optional: back up or share your setup
+
+Export (next to the mod count, above the list) copies every installed mod and the
+load order into one folder. Zip it to hand someone your exact setup, or keep it as
+a backup.
+
+To restore one, drag that folder onto the window or onto the app's dock icon. It
+asks first, tells you how many mods it holds, and keeps your current load order as
+a backup file. Dragging in any single mod folder works the same way.
 
 ## Optional: the item tracker
 
@@ -229,5 +240,14 @@ Re-running Setup is always safe; the bottle registry is backed up
 The Reset button (click twice to confirm) returns the game to vanilla: it removes
 the mod loader, LuaBackend, and the bottle registry changes, and restores the movie
 folder. Mods, seeds, and extracted data are kept, so running Setup again later
-brings modding back in seconds. To remove those too, delete the `KH2 Rando` folder
-in your home directory and the app itself.
+brings modding back in seconds. To remove those too, delete these
+and the app itself:
+
+- `KH2 Rando` in your home folder (mods, seeds, extracted data, the tracker)
+- `KH2SeedGenerator` in your home folder, and KH2 Seed Generator.app wherever you
+  put it
+- `Library/Application Support/kh2rando-mac` in your home folder (cached downloads)
+- `Library/Logs/kh2rando-mac.log` in your home folder
+
+The tracker and the .NET Framework it needs live inside the CrossOver bottle, so
+deleting that bottle in CrossOver removes them.
