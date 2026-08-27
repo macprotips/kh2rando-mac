@@ -85,6 +85,27 @@ public partial class MainWindow : Window
         if (installed.Count < 2)
             return;
 
+        // Pin the choice the first time there is more than one copy. Letting it be
+        // recomputed leaves it free to change when a bottle's recorded version does,
+        // and every change of copy makes CrossOver re-run its bottle update, which
+        // reverts the .NET Framework the tracker depends on.
+        if (_config.CrossOverAppPath == null)
+        {
+            try
+            {
+                var resolved = Bottle.Resolve(_config).OwningApp;
+                if (resolved != null)
+                {
+                    _config.CrossOverAppPath = resolved;
+                    _config.Save();
+                }
+            }
+            catch
+            {
+                // Not set up yet; the picker still works, it just has nothing to pin to.
+            }
+        }
+
         var options = new List<string> { "Automatic" };
         options.AddRange(CrossOverApp.DescribeAll(installed));
         CrossOverPicker.ItemsSource = options;
