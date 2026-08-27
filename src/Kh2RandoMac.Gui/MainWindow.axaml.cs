@@ -253,6 +253,18 @@ public partial class MainWindow : Window
             _mods.Add(row);
         }
         _refreshing = false;
+        UpdateModCount();
+    }
+
+    /// <summary>Keep the mod tally in the hint line current as mods are toggled, moved, or removed.</summary>
+    private void UpdateModCount()
+    {
+        var total = _mods.Count;
+        var enabled = _mods.Count(m => m.Enabled);
+        var tally = total == 0
+            ? "No mods installed yet."
+            : $"{total} mod{(total == 1 ? "" : "s")}, {enabled} enabled.";
+        OrderHint.Text = $"{tally}  Mods at the top win conflicts. Build after any change.";
     }
 
     private static void PaintStatusRow(Border badge, TextBlock icon, TextBlock text, StatusRow row)
@@ -270,6 +282,7 @@ public partial class MainWindow : Window
         if (_refreshing)
             return;
         _workspace.SaveEnabledMods(_mods.Where(m => m.Enabled).Select(m => m.Name));
+        UpdateModCount();
     }
 
     private async void OnRefresh(object? sender, RoutedEventArgs e)
@@ -668,6 +681,20 @@ public partial class MainWindow : Window
 
     private void OnMoveUp(object? sender, RoutedEventArgs e) => MoveMod(sender, -1);
     private void OnMoveDown(object? sender, RoutedEventArgs e) => MoveMod(sender, +1);
+    private void OnMoveToTop(object? sender, RoutedEventArgs e) => MoveModTo(sender, 0);
+    private void OnMoveToBottom(object? sender, RoutedEventArgs e) => MoveModTo(sender, _mods.Count - 1);
+
+    /// <summary>Move a mod to an absolute position (long lists make one-step nudging tedious).</summary>
+    private void MoveModTo(object? sender, int target)
+    {
+        if (_busy || (sender as Control)?.Tag is not ModRow row)
+            return;
+        var index = _mods.IndexOf(row);
+        if (index < 0 || target < 0 || target >= _mods.Count || index == target)
+            return;
+        _mods.Move(index, target);
+        SaveModOrder();
+    }
 
     private void MoveMod(object? sender, int delta)
     {
