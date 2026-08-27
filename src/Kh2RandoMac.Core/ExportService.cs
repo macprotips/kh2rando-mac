@@ -43,7 +43,7 @@ public static class ExportService
         foreach (var mod in mods)
         {
             log?.Invoke($"Copying {mod}...");
-            CopyDirectory(workspace.ModPath(mod), Path.Combine(modsOut, mod));
+            DirectoryOps.Copy(workspace.ModPath(mod), Path.Combine(modsOut, mod));
         }
 
         // The load order is the half people forget, and it is the half that decides
@@ -84,12 +84,4 @@ public static class ExportService
         them on.
         """;
 
-    private static void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var dir in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(dir.Replace(source, destination, StringComparison.Ordinal));
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-            File.Copy(file, file.Replace(source, destination, StringComparison.Ordinal), true);
-    }
 }

@@ -28,7 +28,7 @@ public static class Launcher
             : Path.Combine(config.GameDir ?? throw new InvalidOperationException("Game folder not configured."),
                 GameLocator.Kh2ExeName);
 
-        var psi = new ProcessStartInfo(CrossOverApp.CxStart) { UseShellExecute = false };
+        var psi = new ProcessStartInfo(CrossOverApp.BinIn("cxstart", bottle.OwningApp)) { UseShellExecute = false };
         psi.ArgumentList.Add("--bottle");
         psi.ArgumentList.Add(bottle.Name);
         psi.ArgumentList.Add(target);

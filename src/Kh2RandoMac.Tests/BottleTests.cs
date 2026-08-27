@@ -71,4 +71,22 @@ public class BottleTests
         using var fake = new FakeBottle();
         Assert.Null(fake.Bottle.ToMacPath(@"Q:\nope"));
     }
+
+    [Fact]
+    public void CrossOverVersion_IsReadFromTheBottleConf()
+    {
+        using var fake = new FakeBottle();
+        Assert.Null(fake.Bottle.CrossOverVersion);
+
+        File.WriteAllLines(fake.Bottle.BottleConf, new[]
+        {
+            ";; Version              This is the CrossOver version that made the bottle",
+            "\"Version\" = \"27.0.0.40817\"",
+            "\"Template\" = \"win10_64\"",
+        });
+
+        // Stable and Preview can both be installed; a bottle upgraded by Preview fails
+        // to run under the older stable build, so the version decides which one to use.
+        Assert.Equal("27.0.0.40817", fake.Bottle.CrossOverVersion);
+    }
 }

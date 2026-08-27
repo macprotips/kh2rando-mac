@@ -17,6 +17,14 @@ public class RefinedService
     /// <summary>Microsoft's permanent link to the latest .NET 8 Desktop Runtime (x64) installer.</summary>
     public const string DesktopRuntimeUrl = "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe";
 
+    /// <summary>Run an installer inside the bottle, recording what it said for field logs.</summary>
+    private static int RunInstaller(Bottle bottle, string macExePath, params string[] args)
+    {
+        var run = bottle.RunProgram(macExePath, args);
+        FileLog.Write($"[refined] installer exit={run.ExitCode} stderr: {run.ErrorTail()}");
+        return run.ExitCode;
+    }
+
     /// <summary>Whether any Re:Fined mod is installed and enabled in the workspace.</summary>
     public static bool AnyRefinedEnabled(Workspace workspace) =>
         workspace.EnabledMods().Any(IsRefinedMod);
@@ -72,7 +80,7 @@ public class RefinedService
         }
 
         log("Installing the .NET 8 Desktop Runtime into the bottle (a few minutes)...");
-        var exit = RunInBottle(bottle, installer, "/install", "/quiet", "/norestart");
+        var exit = RunInstaller(bottle, installer, "/install", "/quiet", "/norestart");
         FileLog.Write($"[refined] desktop runtime installer exit code: {exit}");
         // 0 = success, 3010 = success but Windows wants a reboot (meaningless in a bottle).
         if (exit != 0 && exit != 3010)
@@ -84,29 +92,4 @@ public class RefinedService
         log(".NET 8 Desktop Runtime installed.");
     }
 
-    private static int RunInBottle(Bottle bottle, string macExePath, params string[] args)
-    {
-        var psi = new ProcessStartInfo(CrossOverApp.Wine)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        psi.ArgumentList.Add("--bottle");
-        psi.ArgumentList.Add(bottle.Name);
-        psi.ArgumentList.Add(bottle.ToWindowsPath(macExePath));
-        foreach (var a in args)
-            psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi)!;
-        // Both pipes must be drained concurrently: this installer runs for minutes
-        // and Wine fills stderr while it does, which deadlocks a sequential read.
-        var stdoutTask = p.StandardOutput.ReadToEndAsync();
-        var stderrTask = p.StandardError.ReadToEndAsync();
-        p.WaitForExit();
-        stdoutTask.GetAwaiter().GetResult();
-        var stderr = stderrTask.GetAwaiter().GetResult();
-        var tail = stderr.Length > 400 ? stderr[^400..] : stderr;
-        FileLog.Write($"[refined] installer stderr: {tail.Trim()}");
-        return p.ExitCode;
-    }
 }

@@ -108,7 +108,7 @@ public class TrackerService
 
         // Wine's built-in mono registers itself as .NET 4.8, which makes the real
         // installer exit early claiming success. Remove it first.
-        var listing = RunWine(bottle, log, quiet: true, "uninstaller", "--list");
+        var listing = RunBuiltin(bottle, "uninstaller", "--list");
         var entries = ParseUninstallerList(listing);
         FileLog.Write($"[tracker] bottle packages: {string.Join("; ", entries.Select(e => e.Name))}");
         foreach (var (id, name) in entries)
@@ -116,16 +116,16 @@ public class TrackerService
             if (!IsMonoPackage(name))
                 continue;
             log($"Removing '{name}' (Wine's .NET substitute, it blocks the real installer)...");
-            RunWine(bottle, log, quiet: true, "uninstaller", "--remove", id);
+            RunBuiltin(bottle, "uninstaller", "--remove", id);
         }
 
         // The mono uninstall does not always clear the registry markers that claim
         // .NET 4.x is installed, and the installer trusts them. Delete them outright;
         // the real installer recreates them. reg delete errors on a missing key,
         // which is fine.
-        RunWine(bottle, log, quiet: true, "reg", "delete",
+        RunBuiltin(bottle, "reg", "delete",
             @"HKLM\Software\Microsoft\NET Framework Setup\NDP\v4", "/f");
-        RunWine(bottle, log, quiet: true, "reg", "delete",
+        RunBuiltin(bottle, "reg", "delete",
             @"HKLM\Software\Wow6432Node\Microsoft\NET Framework Setup\NDP\v4", "/f");
 
         var installer = Path.Combine(TrackerDir(workspace), "ndp48.exe");
@@ -138,10 +138,12 @@ public class TrackerService
         // On Windows 10 the framework ships with the OS, so the installer refuses to
         // run there. Pose as Windows 7 for the install, then switch back.
         log("Running the installer (the log stays quiet while it works, that is normal)...");
-        RunWine(bottle, log, quiet: true, "winecfg", "-v", "win7");
+        RunBuiltin(bottle, "winecfg", "-v", "win7");
         try
         {
-            var exit = RunWineExe(bottle, log, installer, "/q", "/norestart");
+            var run = bottle.RunProgram(installer, "/q", "/norestart");
+            FileLog.Write($"[tracker] installer exit={run.ExitCode} stderr: {run.ErrorTail()}");
+            var exit = run.ExitCode;
             FileLog.Write($"[tracker] ndp48 installer exit code: {exit}");
             // 0 = success, 3010 = success but Windows wants a reboot (meaningless in a bottle).
             if (exit != 0 && exit != 3010)
@@ -152,7 +154,7 @@ public class TrackerService
         }
         finally
         {
-            RunWine(bottle, log, quiet: true, "winecfg", "-v", "win10");
+            RunBuiltin(bottle, "winecfg", "-v", "win10");
         }
 
         if (!HasDotNet48(bottle))
@@ -290,6 +292,14 @@ public class TrackerService
         return IsTrackerVisible();
     }
 
+    /// <summary>Run a builtin in the bottle, recording what it said for field logs.</summary>
+    private static string RunBuiltin(Bottle bottle, params string[] args)
+    {
+        var run = bottle.RunBuiltin(args);
+        FileLog.Write($"[tracker] wine {args.FirstOrDefault()} exit={run.ExitCode} stderr: {run.ErrorTail()}");
+        return run.Combined;
+    }
+
     /// <summary>
     /// Parse `wine uninstaller --list` output: one "id|||Display Name" per line, mixed
     /// with Wine's own logging, which never contains the ||| separator.
@@ -307,62 +317,4 @@ public class TrackerService
         return result;
     }
 
-    private static string Tail(string s, int max = 400) => s.Length > max ? s[^max..] : s;
-
-    /// <summary>Run a wine builtin (uninstaller, winecfg) in the bottle and return its output.</summary>
-    private static string RunWine(Bottle bottle, Action<string> log, bool quiet, params string[] args)
-    {
-        var psi = new ProcessStartInfo(CrossOverApp.Wine)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        psi.ArgumentList.Add("--bottle");
-        psi.ArgumentList.Add(bottle.Name);
-        foreach (var a in args)
-            psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi)!;
-        // Both pipes must be drained concurrently: Wine writes a steady stream of
-        // fixme/err chatter to stderr, and reading stdout to completion first
-        // deadlocks once that pipe fills, which hangs the whole install.
-        var stdoutTask = p.StandardOutput.ReadToEndAsync();
-        var stderrTask = p.StandardError.ReadToEndAsync();
-        p.WaitForExit();
-        var output = stdoutTask.GetAwaiter().GetResult();
-        var stderr = stderrTask.GetAwaiter().GetResult();
-        var tail = stderr.Length > 400 ? stderr[^400..] : stderr;
-        FileLog.Write($"[tracker] wine {args.FirstOrDefault()} exit={p.ExitCode} stderr: {tail.Trim()}");
-        if (!quiet)
-            log(output.Trim());
-        // Some CrossOver versions print command output on stderr (seen with
-        // uninstaller --list); parsers get both streams.
-        return output + "\n" + stderr;
-    }
-
-    /// <summary>Run a Windows exe (by mac path) in the bottle and wait; returns its exit code.</summary>
-    private static int RunWineExe(Bottle bottle, Action<string> log, string macExePath, params string[] args)
-    {
-        var psi = new ProcessStartInfo(CrossOverApp.Wine)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        psi.ArgumentList.Add("--bottle");
-        psi.ArgumentList.Add(bottle.Name);
-        psi.ArgumentList.Add(bottle.ToWindowsPath(macExePath));
-        foreach (var a in args)
-            psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi)!;
-        // Drain both pipes concurrently; the .NET Framework installer runs for
-        // minutes and Wine fills stderr while it does.
-        var stdoutTask = p.StandardOutput.ReadToEndAsync();
-        var stderrTask = p.StandardError.ReadToEndAsync();
-        p.WaitForExit();
-        FileLog.Write($"[tracker] installer stderr tail: " +
-            Tail(stderrTask.GetAwaiter().GetResult()));
-        stdoutTask.GetAwaiter().GetResult();
-        return p.ExitCode;
-    }
 }

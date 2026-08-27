@@ -72,7 +72,7 @@ public static class ImportService
         foreach (var mod in mods)
         {
             log?.Invoke($"Importing {mod}...");
-            ReplaceDirectory(
+            DirectoryOps.Replace(
                 Path.Combine(modsDir, mod.Replace('/', Path.DirectorySeparatorChar)),
                 workspace.ModPath(mod));
         }
@@ -96,41 +96,9 @@ public static class ImportService
         RefuseSourceInsideWorkspace(workspace, folder);
         workspace.EnsureDirectories();
         var name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar));
-        ReplaceDirectory(folder, workspace.ModPath(name));
+        DirectoryOps.Replace(folder, workspace.ModPath(name));
         log?.Invoke($"Imported {name}.");
         return name;
     }
 
-    /// <summary>
-    /// Copy alongside the destination first and only swap once it is complete, so a
-    /// failure part way (a pulled USB stick, a full disk) cannot leave the user with
-    /// neither their old mod nor the new one.
-    /// </summary>
-    private static void ReplaceDirectory(string source, string destination)
-    {
-        var staging = destination + ".importing";
-        if (Directory.Exists(staging))
-            Directory.Delete(staging, true);
-        try
-        {
-            CopyDirectory(source, staging);
-            if (Directory.Exists(destination))
-                Directory.Delete(destination, true);
-            Directory.Move(staging, destination);
-        }
-        finally
-        {
-            if (Directory.Exists(staging))
-                Directory.Delete(staging, true);
-        }
-    }
-
-    private static void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var dir in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(dir.Replace(source, destination, StringComparison.Ordinal));
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-            File.Copy(file, file.Replace(source, destination, StringComparison.Ordinal), true);
-    }
 }

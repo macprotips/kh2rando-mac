@@ -25,6 +25,38 @@ public class Bottle
     public string DriveC => Path.Combine(Root, "drive_c");
     public string DosDevices => Path.Combine(Root, "dosdevices");
     public string UserReg => Path.Combine(Root, "user.reg");
+    public string BottleConf => Path.Combine(Root, "cxbottle.conf");
+
+    /// <summary>
+    /// The CrossOver version that last updated this bottle, from cxbottle.conf. Used to
+    /// run it with the matching CrossOver when both stable and Preview are installed.
+    /// </summary>
+    public string? CrossOverVersion
+    {
+        get
+        {
+            try
+            {
+                foreach (var line in File.ReadLines(BottleConf))
+                {
+                    var t = line.TrimStart();
+                    if (!t.StartsWith("\"Version\"", StringComparison.Ordinal))
+                        continue;
+                    var parts = t.Split('=', 2);
+                    if (parts.Length == 2)
+                        return parts[1].Trim().Trim('"');
+                }
+            }
+            catch
+            {
+                // No conf, or unreadable: fall back to the default CrossOver.
+            }
+            return null;
+        }
+    }
+
+    /// <summary>The CrossOver app that owns this bottle.</summary>
+    public string? OwningApp => CrossOverApp.AppPathForVersion(CrossOverVersion);
 
     public static string BottlesRoot => CrossOverApp.BottlesRoot;
 
@@ -204,6 +236,55 @@ public class Bottle
         {
             return 501;
         }
+    }
+
+    /// <summary>What a program left behind after running inside the bottle.</summary>
+    public record RunResult(int ExitCode, string Output, string Error)
+    {
+        /// <summary>
+        /// Some CrossOver versions print a command's output on stderr rather than
+        /// stdout (seen with `uninstaller --list`), so parsers want both.
+        /// </summary>
+        public string Combined => Output + "\n" + Error;
+
+        public string ErrorTail(int max = 400) =>
+            (Error.Length > max ? Error[^max..] : Error).Trim();
+    }
+
+    /// <summary>
+    /// Run a Wine builtin (uninstaller, winecfg, reg) inside this bottle and wait.
+    /// </summary>
+    public RunResult RunBuiltin(params string[] args) => Run(args);
+
+    /// <summary>
+    /// Run a Windows executable, given by its mac path, inside this bottle and wait.
+    /// </summary>
+    public RunResult RunProgram(string macExePath, params string[] args) =>
+        Run(new[] { ToWindowsPath(macExePath) }.Concat(args).ToArray());
+
+    private RunResult Run(string[] args)
+    {
+        var psi = new ProcessStartInfo(CrossOverApp.BinIn("wine", OwningApp))
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        psi.ArgumentList.Add("--bottle");
+        psi.ArgumentList.Add(Name);
+        foreach (var a in args)
+            psi.ArgumentList.Add(a);
+        using var p = Process.Start(psi)!;
+        // Both pipes have to be drained at once. Wine writes a steady stream of
+        // fixme/err chatter to stderr, so reading stdout to completion first
+        // deadlocks the moment that pipe fills, which hangs multi-minute installs
+        // with no way out but force quit.
+        var output = p.StandardOutput.ReadToEndAsync();
+        var error = p.StandardError.ReadToEndAsync();
+        p.WaitForExit();
+        return new RunResult(p.ExitCode,
+            output.GetAwaiter().GetResult(),
+            error.GetAwaiter().GetResult());
     }
 
     private const string OverridesSection = "[Software\\\\Wine\\\\DllOverrides]";
