@@ -224,7 +224,7 @@ public class TrackerService
 
         // The tracker writes its KhTrackerSettings folder into its working directory;
         // anchor it next to the exe so settings live in the workspace.
-        var psi = new ProcessStartInfo(CrossOverApp.Wine)
+        var psi = new ProcessStartInfo(CrossOverApp.BinIn("wine", bottle.OwningApp))
         {
             UseShellExecute = false,
             WorkingDirectory = TrackerDir(workspace),

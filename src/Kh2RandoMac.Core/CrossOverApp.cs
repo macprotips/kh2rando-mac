@@ -192,9 +192,9 @@ public static class CrossOverApp
         return path;
     }
 
-    public static string CxStart => Bin("cxstart");
-
-    public static string Wine => Bin("wine");
+    // No global CxStart/Wine: which copy to use depends on the bottle, and reaching
+    // for "whichever is installed" is how the tracker ended up launching through the
+    // wrong one. Callers pass a bottle's OwningApp to BinIn instead.
 
     private static readonly Lazy<string> _bottlesRoot = new(() =>
     {
