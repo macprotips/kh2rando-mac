@@ -17,6 +17,7 @@ try
         "disable" => ModAction(rest, "disable"),
         "list" => ListMods(),
         "build" => Build(),
+        "export" => Export(rest),
         "run" => Run(),
         "movies" => Movies(rest),
         "tracker" => await Tracker(),
@@ -63,6 +64,8 @@ static int Help()
           update [mod]              Update GitHub-installed mods (no argument = all)
           build                     Build enabled mods into the folder Panacea loads
                                     (no mods enabled = clean vanilla build)
+          export <folder>           Copy all installed mods and the load order into a
+                                    folder, for a backup or to share a setup
 
         Game:
           run                       Launch KH 1.5+2.5 through CrossOver
@@ -361,6 +364,16 @@ static int ListMods()
         Console.WriteLine($"  {mark} {mod.Name}{(title != null && title != mod.Name ? $"  ({title})" : "")}");
     }
     Console.WriteLine("\nEnabled mods load top-first; run 'kh2rando build' after changes.");
+    return 0;
+}
+
+static int Export(string[] rest)
+{
+    if (rest.Length == 0)
+        throw new InvalidOperationException("Usage: kh2rando export <folder>");
+    var (_, workspace) = LoadConfigured();
+    var count = ExportService.Export(workspace, rest[0], Say);
+    Say($"Exported {count} mod(s) and the load order to {rest[0]}");
     return 0;
 }
 

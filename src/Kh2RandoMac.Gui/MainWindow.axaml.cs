@@ -130,6 +130,7 @@ public partial class MainWindow : Window
             InstallZipButton.IsEnabled = !busy;
             InstallGoaButton.IsEnabled = !busy;
             InstallRefinedButton.IsEnabled = !busy;
+            ExportButton.IsEnabled = !busy;
             ModList.IsEnabled = !busy;
         });
     }
@@ -658,6 +659,34 @@ public partial class MainWindow : Window
             TrackerButton.Content = original;
             TrackerButton.IsEnabled = !_busy;
         }
+    }
+
+    private async void OnExportMods(object? sender, RoutedEventArgs e)
+    {
+        if (_busy)
+            return;
+        if (_mods.Count == 0)
+        {
+            Log("Nothing to export yet, no mods are installed.");
+            return;
+        }
+
+        var size = ExportService.DescribeSize(ExportService.EstimateSize(_workspace));
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = $"Choose an empty folder for the export ({size})",
+            AllowMultiple = false,
+        });
+        var destination = picked.FirstOrDefault()?.Path.LocalPath;
+        if (destination == null)
+            return;
+
+        await RunTask("Export mods", () => Task.Run(() =>
+        {
+            var count = ExportService.Export(_workspace, destination, Log);
+            Log($"Exported {count} mod(s) and the load order to {destination}");
+            Log("Zip that folder to share it. It includes a README explaining how to restore it.");
+        }));
     }
 
     private void OnRevealLog(object? sender, RoutedEventArgs e) => RevealLogInFinder();
