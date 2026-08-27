@@ -75,7 +75,9 @@
           </Grid>
           <!-- Only shown when more than one CrossOver is installed; they share bottles,
                and a bottle can only be run by a copy its own age or newer. -->
-          <Grid x:Name="CrossOverRow" ColumnDefinitions="Auto,96,*" IsVisible="False">
+          <!-- First column is fixed to the badge width (20 plus its 10 margin) so this
+               label lines up with the ones beside a badge, not with the badges. -->
+          <Grid x:Name="CrossOverRow" ColumnDefinitions="30,96,*" IsVisible="False">
             <TextBlock Grid.Column="1" Text="CrossOver" FontSize="13" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
             <ComboBox Grid.Column="2" x:Name="CrossOverPicker" FontSize="12"
@@ -123,7 +125,7 @@
           <TextBlock Text="Install GoA" VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
-      <Button x:Name="InstallRefinedButton" Grid.Column="5" MinWidth="152" Content="Install Re:Fined" Margin="6,0,0,0" Click="OnInstallRefined"
+      <Button x:Name="InstallRefinedButton" Grid.Column="5" MinWidth="152" HorizontalContentAlignment="Center" Content="Install Re:Fined" Margin="6,0,0,0" Click="OnInstallRefined"
               ToolTip.Tip="Installs Re:Fined, a quality-of-life overhaul with skippable cutscenes, soft reset, and a prologue skip. Works on its own or alongside a seed. Large download."/>
     </Grid>
 
