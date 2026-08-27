@@ -11,7 +11,10 @@ APP="$OUT_DIR/KH2 Rando Manager.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/seedgen-setup"
 cp -R "$PUBLISH_DIR/." "$APP/Contents/MacOS/"
-cp "$REPO_ROOT/packaging/Info.plist" "$APP/Contents/Info.plist"
+# APP_VERSION is stamped into the bundle so Finder, crash reports and any future
+# updater agree with the release; dev builds fall back to the in-app build tag.
+APP_VERSION="${APP_VERSION:-$(sed -n 's/.*Build = "\(.*\)".*/\1/p' "$REPO_ROOT/src/Kh2RandoMac.Core/AppInfo.cs")}"
+sed "s/__VERSION__/$APP_VERSION/g" "$REPO_ROOT/packaging/Info.plist" > "$APP/Contents/Info.plist"
 cp "$REPO_ROOT/packaging/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp "$REPO_ROOT/tools/setup-seed-generator.sh" "$APP/Contents/Resources/seedgen-setup/"
 cp -R "$REPO_ROOT/tools/seedgen" "$APP/Contents/Resources/seedgen-setup/seedgen"

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+- Re:Fined support: an Install Re:Fined button, and the .NET runtime it needs is
+  installed into the bottle on the first build. Use it on its own for a normal
+  playthrough or alongside a randomizer seed
+- Export: copies every installed mod and the load order into one folder, for a
+  backup or to hand someone your exact setup
+- Import: drop an exported folder, or any folder holding a mod, onto the window
+  or the dock icon. The load order comes with it, and the previous one is kept
+- Move a mod straight to the top or bottom of the load order, and a live count
+  of how many mods are installed and enabled
+- Warns about mods confirmed to break current versions of the game, on install
+  and again at build time
+- Log button, which reveals the log file in Finder for bug reports
+- Fixed texture and model mods only partially applying: mod definitions written
+  on Windows mix backslash and forward-slash paths, and the backslash entries
+  were silently skipped on macOS
+- The seed generator install no longer triggers the Xcode Command Line Tools
+  prompt, so a Mac with no developer tools can use it
+- Interface grouped by purpose, with destructive actions set apart; every
+  tooltip and log message rewritten
+- Corrected the tracker install estimate: the .NET step takes a few minutes,
+  not the 15 to 30 previously claimed
+
 ## 0.2.1 (2026-08-25)
 
 Tracker fixes proven on a second machine, a fix for texture and model mods,
@@ -28,7 +52,7 @@ and easier bug reporting.
 
 - Tracker button: installs and opens the community KH2 item tracker
   (Dee-Ayy/KH2Tracker) inside the game's bottle, with auto-tracking. The first
-  install also puts .NET Framework 4.8 into the bottle (one time, 15 to 30
+  install also puts .NET Framework 4.8 into the bottle (one time, a few
   minutes)
 - FPS HUD toggle: per-bottle Metal Performance HUD on or off
 

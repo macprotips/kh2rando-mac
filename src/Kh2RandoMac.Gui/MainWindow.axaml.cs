@@ -77,9 +77,20 @@ public partial class MainWindow : Window
     public async Task InstallFilesAsync(IReadOnlyList<string> paths)
     {
         // Folders are handled first: an exported setup or a single mod folder.
-        foreach (var folder in paths.Where(Directory.Exists))
+        var folders = paths.Where(Directory.Exists).ToList();
+        if (folders.Count > 0)
         {
-            await ImportFolderAsync(folder);
+            if (paths.Count > 1)
+                Log($"Handling the folder '{Path.GetFileName(folders[0])}'. Drop other items separately.");
+            try
+            {
+                await ImportFolderAsync(folders[0]);
+            }
+            catch (Exception ex)
+            {
+                Log($"ERROR: {ex.Message}");
+                FileLog.Write(ex.ToString());
+            }
             return;
         }
 
@@ -184,6 +195,7 @@ public partial class MainWindow : Window
             InstallGoaButton.IsEnabled = !busy;
             InstallRefinedButton.IsEnabled = !busy;
             ExportButton.IsEnabled = !busy;
+            SeedGenButton.IsEnabled = !busy;
             ModList.IsEnabled = !busy;
         });
     }
@@ -210,7 +222,15 @@ public partial class MainWindow : Window
         finally
         {
             SetBusy(false);
-            await RefreshAllAsync();
+            try
+            {
+                await RefreshAllAsync();
+            }
+            catch (Exception ex)
+            {
+                Log($"ERROR refreshing status: {ex.Message}");
+                FileLog.Write(ex.ToString());
+            }
         }
     }
 
@@ -623,11 +643,11 @@ public partial class MainWindow : Window
                 "Kingdom Hearts bottle is incomplete. Repair reinstalls it, which takes a few " +
                 "minutes. Quit the game and Steam first.",
                 "Repair");
+            _trackerRepairArmed = false;
             if (!repair)
                 return;
-            _trackerRepairArmed = false;
-            await RunTask("Repair tracker install", () =>
-                new TrackerService().EnsureInstalled(_workspace, bottle, Log, force: true));
+            await RunTask("Repair tracker install", () => Task.Run(() =>
+                new TrackerService().EnsureInstalled(_workspace, bottle, Log, force: true)));
             if (TrackerService.IsInstalled(_workspace, bottle))
                 await LaunchTrackerWithSpinner(bottle);
             return;
@@ -660,8 +680,8 @@ public partial class MainWindow : Window
             "Install");
         if (!confirmed)
             return;
-        await RunTask("Install tracker", () =>
-            new TrackerService().EnsureInstalled(_workspace, bottle, Log));
+        await RunTask("Install tracker", () => Task.Run(() =>
+            new TrackerService().EnsureInstalled(_workspace, bottle, Log)));
         if (TrackerService.IsInstalled(_workspace, bottle))
             await LaunchTrackerWithSpinner(bottle);
     }
@@ -736,7 +756,16 @@ public partial class MainWindow : Window
             return;
         }
 
-        var size = ExportService.DescribeSize(ExportService.EstimateSize(_workspace));
+        string size;
+        try
+        {
+            size = ExportService.DescribeSize(await Task.Run(() => ExportService.EstimateSize(_workspace)));
+        }
+        catch (Exception ex)
+        {
+            Log($"ERROR: {ex.Message}");
+            return;
+        }
         var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = $"Choose an empty folder for the export ({size})",
@@ -826,7 +855,14 @@ public partial class MainWindow : Window
         var found = candidates.FirstOrDefault(Directory.Exists);
         if (found != null)
         {
-            System.Diagnostics.Process.Start("/usr/bin/open", new[] { found });
+            try
+            {
+                System.Diagnostics.Process.Start("/usr/bin/open", new[] { found });
+            }
+            catch (Exception ex)
+            {
+                Log($"ERROR: could not open the Seed Generator: {ex.Message}");
+            }
             Log("Opening the Seed Generator. Generate a seed, then drag the zip onto this window.");
             return;
         }
@@ -992,7 +1028,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                await new RefinedService().EnsureDesktopRuntime(_workspace, bottle, Log);
+                await Task.Run(() => new RefinedService().EnsureDesktopRuntime(_workspace, bottle, Log));
             }
             catch
             {

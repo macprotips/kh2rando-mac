@@ -10,9 +10,10 @@ game. New users should start with the [Setup Guide](docs/SETUP.md).
 
 ![Screenshot of KH2 Rando Manager](docs/images/manager.png)
 
-Status: working, but so far verified on one machine (Apple Silicon, Steam version,
-CrossOver). Sikarugir wrapper installs are detected and supported but untested, and
-Intel builds are provided but untested. See [docs/ROADMAP.md](docs/ROADMAP.md).
+Status: working, verified on Apple Silicon with the Steam version under CrossOver.
+Releases are Apple Silicon only. Sikarugir wrappers are detected and can be set up
+and built for, but the tracker, FPS HUD, and Re:Fined runtime install are CrossOver
+only. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Requirements
 
@@ -63,7 +64,8 @@ The detailed version with checkpoints and troubleshooting is the
    ![The seed generator running natively on macOS](docs/images/seed-generator.png)
 7. Drag the seed zip onto the KH2 Rando Manager window, click Build, and wait for
    "Build complete".
-8. Launch the game through Steam in CrossOver and start a New Game.
+8. Click Build & Run, or launch the game through Steam in CrossOver yourself, and
+   start a New Game.
 
 Playing a new seed after that: generate, drag the zip in, Build, play. Build again
 after any mod change.
@@ -78,8 +80,12 @@ The Manager also supports [Re:Fined](https://github.com/KH-ReFined/KH-ReFined),
 the quality-of-life overhaul, either on its own or added to a randomizer
 setup; see the [Setup Guide](docs/SETUP.md#optional-refined).
 
-There is also a command line version (`kh2rando`); run `kh2rando help` for the
-commands. Diagnostics are written to `~/Library/Logs/kh2rando-mac.log`. Attach that
+Export copies every installed mod and the load order into one folder, for a backup
+or to hand someone your exact setup. Dropping that folder back onto the window (or
+onto the dock icon) restores it, load order included.
+
+There is also a command line version (`kh2rando`), published as a separate download
+on the releases page; run `kh2rando help` for the commands. Diagnostics are written to `~/Library/Logs/kh2rando-mac.log`. Attach that
 file to bug reports.
 
 ## How it works
@@ -100,7 +106,12 @@ git clone --recurse-submodules https://github.com/macprotips/kh2rando-mac
 cd kh2rando-mac
 dotnet test src/Kh2RandoMac.Tests
 dotnet publish src/Kh2RandoMac.Gui -c Release -r osx-arm64 --self-contained -o dist/gui-publish
+bash packaging/make-app.sh dist/gui-publish dist
 ```
+
+The last step assembles `KH2 Rando Manager.app`. Running the published executable
+directly works, but it is missing the bundled seed generator installer, so the Seed
+Generator button will report that the app is incomplete.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 

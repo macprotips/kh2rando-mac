@@ -182,7 +182,7 @@
               Click="OnToggleMovies"
               ToolTip.Tip="Movie cutscenes crash the game under CrossOver. Skipping them avoids the crash. Click again to put them back."/>
       <Border Classes="divider" Margin="6,4"/>
-      <Button Content="Seed Generator" Padding="14,8"
+      <Button x:Name="SeedGenButton" Content="Seed Generator" Padding="14,8"
               Click="OnOpenSeedGenerator"
               ToolTip.Tip="Opens the KH2 Randomizer seed generator. The first click installs it, which takes a few minutes."/>
       <Button x:Name="TrackerButton" Content="Tracker" Padding="14,8"

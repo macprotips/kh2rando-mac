@@ -77,6 +77,17 @@ build_arch() {
   notarize_zip "$OUT/kh2rando-cli-$VERSION-$label.zip"
 }
 
+# A -dev build tag would be shown in the app's own window on a public release.
+BUILD_TAG="$(sed -n 's/.*Build = "\(.*\)".*/\1/p' src/Kh2RandoMac.Core/AppInfo.cs)"
+case "$BUILD_TAG" in
+  *-dev*) echo "refusing to release: AppInfo.Build is '$BUILD_TAG'" >&2; exit 1 ;;
+esac
+if [ "$BUILD_TAG" != "${VERSION#v}" ]; then
+  echo "refusing to release: AppInfo.Build '$BUILD_TAG' does not match tag '$VERSION'" >&2
+  exit 1
+fi
+export APP_VERSION="$BUILD_TAG"
+
 build_arch osx-arm64 "$HOME/.dotnet/dotnet"
 # Intel is opt-in (BUILD_X64=1): Apple Silicon is the supported platform.
 if [ "${BUILD_X64:-}" = "1" ] && [ -x "$HOME/.dotnet-x64/dotnet" ]; then

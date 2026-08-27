@@ -7,7 +7,9 @@
 # upload usually still reaches Apple. On a crash this script finds the newest
 # submission in the account history and resumes waiting on it, retrying the
 # submit only if nothing landed.
-set -uo pipefail
+# -e matters here: a failed staple or spctl must abort before anything is
+# uploaded. An unstapled build shipped once because a failure was swallowed.
+set -euo pipefail
 
 APP="${1:?usage: notarize.sh <path-to-app> [keychain-profile]}"
 PROFILE="${2:-kh2rando-notary}"
