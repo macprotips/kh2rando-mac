@@ -2,15 +2,43 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Kh2RandoMac.Gui.MainWindow"
         Title="KH2 Rando Manager"
-        Width="1060" Height="740"
-        MinWidth="820" MinHeight="560">
+        Width="1180" Height="800"
+        MinWidth="960" MinHeight="600">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="14">
+  <Window.Styles>
+    <!-- Hairline between button groups, so related controls read as a set. -->
+    <Style Selector="Border.divider">
+      <Setter Property="Width" Value="1"/>
+      <Setter Property="Background" Value="#26FFFFFF"/>
+      <Setter Property="Margin" Value="3,5"/>
+    </Style>
+    <!-- Reorder controls repeat on every row; keep them quiet until hovered. -->
+    <Style Selector="Button.reorder">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#A6FFFFFF"/>
+      <Setter Property="Padding" Value="9,5"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button.reorder:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#22FFFFFF"/>
+    </Style>
+    <!-- Destructive actions get a warm tint so they are never confused with routine ones. -->
+    <Style Selector="Button.destructive">
+      <Setter Property="Foreground" Value="#FF8A80"/>
+    </Style>
+    <Style Selector="TextBlock.sectionlabel">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Opacity" Value="0.55"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </Window.Styles>
 
-    <!-- Status header -->
-    <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="16,14" Margin="0,0,0,10">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="20">
+
+    <!-- Status header: what the app knows, plus the setup and upkeep actions -->
+    <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="20,18" Margin="0,0,0,16">
       <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,16,0">
+        <StackPanel Grid.Column="0" Spacing="13" Margin="0,0,24,0">
           <Grid ColumnDefinitions="Auto,96,*">
             <Border x:Name="GameStatusBadge" Width="20" Height="20" CornerRadius="10"
                     Margin="0,0,10,0" VerticalAlignment="Top">
@@ -46,68 +74,85 @@
             <TextBlock Grid.Column="2" x:Name="DataStatusText" FontSize="13" TextWrapping="Wrap"/>
           </Grid>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+
+        <!-- Grouped left to right: one-time setup, upkeep, then diagnostics and the
+             destructive action furthest from everything else. -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
-                  ToolTip.Tip="One-time setup: finds your game, installs the Panacea mod loader and LuaBackend into it, and configures the bottle. Quit Steam and the game in CrossOver first."/>
+                  ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, and configures the bottle. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
-                  ToolTip.Tip="Unpacks the game's files so mods can be built against them. One time, 10 to 20 minutes, about 30 GB. Run again after a game update."/>
+                  ToolTip.Tip="Unpacks the game's files so mods can be built against them. Takes 10 to 20 minutes and about 30 GB. Run it again after a game update."/>
+          <Border Classes="divider"/>
           <Button x:Name="UpdatesButton" Content="Check Updates" Click="OnCheckUpdates"
-                  ToolTip.Tip="Update GitHub-installed mods (like GoA) to their latest version"/>
+                  ToolTip.Tip="Updates mods installed from GitHub to their latest version."/>
           <Button x:Name="RefreshButton" Content="Refresh" Click="OnRefresh"
-                  ToolTip.Tip="Re-check the game, mod loader, and mod list."/>
-          <Button x:Name="ResetButton" Content="Reset…" Click="OnReset"
-                  ToolTip.Tip="Return the game to vanilla: removes the mod loader, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
+                  ToolTip.Tip="Re-checks the game, mod loader, and mod list."/>
+          <Border Classes="divider"/>
           <Button x:Name="LogButton" Content="Log" Click="OnRevealLog"
-                  ToolTip.Tip="Show the app's log file in Finder. If something goes wrong, send this file with your bug report."/>
+                  ToolTip.Tip="Shows the app's log file in Finder. Attach it to bug reports."/>
+          <Button x:Name="ResetButton" Classes="destructive" Content="Reset…" Click="OnReset"
+                  ToolTip.Tip="Returns the game to vanilla: removes Panacea, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
         </StackPanel>
       </Grid>
     </Border>
 
-    <!-- Install row -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="0,0,0,10">
+    <!-- Install row: type-anything installs on the left, curated one-click installs on the right -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,18">
       <TextBox x:Name="RepoBox" Grid.Column="0"
                Watermark="GitHub mod (author/repo), or drag any mod/seed file into this window"
-               ToolTip.Tip="Type a GitHub mod as author/repo, for example KH2FM-Mods-Num/GoA-ROM-Edition, then click Install from GitHub."/>
+               ToolTip.Tip="A GitHub mod in author/repo form, for example KH2FM-Mods-Num/GoA-ROM-Edition."/>
       <Button x:Name="InstallGitButton" Grid.Column="1" Content="Install from GitHub" Margin="8,0,0,0" Click="OnInstallGit"
-              ToolTip.Tip="Download and enable the mod typed on the left."/>
-      <Button x:Name="InstallZipButton" Grid.Column="2" Content="Install Mod / Seed File…" Margin="8,0,0,0" Click="OnInstallZip"
-              ToolTip.Tip="Install a randomizer seed zip, a mod zip, a .kh2pcpatch, or a standalone .lua script. Dragging files onto this window works too."/>
-      <Button x:Name="InstallGoaButton" Grid.Column="3" Content="⭐ Install GoA" Margin="8,0,0,0" Click="OnInstallGoa"
-              ToolTip.Tip="One-click install of Garden of Assemblage, the base mod every randomizer seed needs"/>
-      <Button x:Name="InstallRefinedButton" Grid.Column="4" Content="Install Re:Fined" Margin="8,0,0,0" Click="OnInstallRefined"
-              ToolTip.Tip="One-click install of Re:Fined, the quality-of-life overhaul: skippable cutscenes, soft reset, prologue skip, faster menus. Use it on its own for a normal playthrough, or alongside a randomizer seed. Large download."/>
+              ToolTip.Tip="Downloads and enables the mod named on the left."/>
+      <Button x:Name="InstallZipButton" Grid.Column="2" Content="Install Mod / Seed File…" Margin="6,0,0,0" Click="OnInstallZip"
+              ToolTip.Tip="Installs a seed zip, mod zip, .kh2pcpatch, or .lua script. Dragging files onto the window does the same."/>
+      <Border Grid.Column="3" Classes="divider" Margin="9,2"/>
+      <Button x:Name="InstallGoaButton" Grid.Column="4" Content="⭐ Install GoA" Click="OnInstallGoa"
+              ToolTip.Tip="Installs Garden of Assemblage, the base mod every randomizer seed needs."/>
+      <Button x:Name="InstallRefinedButton" Grid.Column="5" Content="Install Re:Fined" Margin="6,0,0,0" Click="OnInstallRefined"
+              ToolTip.Tip="Installs Re:Fined, a quality-of-life overhaul with skippable cutscenes, soft reset, and a prologue skip. Works on its own or alongside a seed. Large download."/>
+    </Grid>
+
+    <!-- List header: names the list and carries its live tally -->
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="2,0,2,9">
+      <TextBlock Grid.Column="0" Text="Load order" FontSize="12" FontWeight="SemiBold" Opacity="0.8"
+                 VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="1" Classes="sectionlabel" Margin="10,0,10,0"
+                 Text="Mods at the top win conflicts. Build after any change."
+                 TextTrimming="CharacterEllipsis"/>
+      <TextBlock x:Name="ModCountText" Grid.Column="2" Classes="sectionlabel"/>
     </Grid>
 
     <!-- Mod list -->
-    <Border Grid.Row="2" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8">
+    <Border Grid.Row="3" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8">
       <ScrollViewer>
         <ItemsControl x:Name="ModList">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Padding="10,6" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
+              <Border Padding="14,11" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
                   <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}"
                             VerticalAlignment="Center"
-                            ToolTip.Tip="Enabled mods are included in the next Build."/>
-                  <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                            ToolTip.Tip="Enabled mods are included in the next build."/>
+                  <StackPanel Grid.Column="1" Margin="10,0" Spacing="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Name}" FontSize="11" Opacity="0.6"/>
                   </StackPanel>
-                  <Button Grid.Column="2" Content="⤒" FontSize="12" Padding="8,4"
+                  <Button Grid.Column="2" Classes="reorder" Content="⤒"
                           Click="OnMoveToTop" Tag="{Binding}"
-                          ToolTip.Tip="Move to the very top. The top mod wins every conflict."/>
-                  <Button Grid.Column="3" Content="▲" FontSize="10" Padding="8,4" Margin="4,0,0,0"
+                          ToolTip.Tip="Move to the top."/>
+                  <Button Grid.Column="3" Classes="reorder" Content="▲"
                           Click="OnMoveUp" Tag="{Binding}"
-                          ToolTip.Tip="Move up one place. Mods higher in the list win conflicts."/>
-                  <Button Grid.Column="4" Content="▼" FontSize="10" Padding="8,4" Margin="4,0,0,0"
+                          ToolTip.Tip="Move up."/>
+                  <Button Grid.Column="4" Classes="reorder" Content="▼"
                           Click="OnMoveDown" Tag="{Binding}"
-                          ToolTip.Tip="Move down one place."/>
-                  <Button Grid.Column="5" Content="⤓" FontSize="12" Padding="8,4" Margin="4,0"
+                          ToolTip.Tip="Move down."/>
+                  <Button Grid.Column="5" Classes="reorder" Content="⤓"
                           Click="OnMoveToBottom" Tag="{Binding}"
-                          ToolTip.Tip="Move to the very bottom. The bottom mod loses every conflict."/>
-                  <Button Grid.Column="6" Content="Remove" FontSize="11" Padding="8,4"
+                          ToolTip.Tip="Move to the bottom."/>
+                  <Border Grid.Column="6" Classes="divider" Margin="6,4"/>
+                  <Button Grid.Column="7" Classes="reorder destructive" Content="Remove"
                           Click="OnRemoveMod" Tag="{Binding}"
-                          ToolTip.Tip="Uninstall this mod from the workspace."/>
+                          ToolTip.Tip="Uninstalls this mod."/>
                 </Grid>
               </Border>
             </DataTemplate>
@@ -116,41 +161,40 @@
       </ScrollViewer>
     </Border>
 
-    <!-- Action row: hint yields space first; controls always stay visible -->
-    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,10">
-      <TextBlock x:Name="OrderHint" Grid.Column="0"
-                 Text="Mods at the top win conflicts. Build after any change."
-                 VerticalAlignment="Center" Opacity="0.6" FontSize="12" Margin="0,0,12,0"
-                 TextTrimming="CharacterEllipsis"/>
-      <Button x:Name="HudButton" Grid.Column="1" Content="FPS HUD: Off" Padding="14,8" Margin="0,0,8,0"
+    <!-- Action row, grouped: game settings, external tools, then the primary build actions -->
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right"
+                Spacing="7" Margin="0,16,0,16">
+      <Button x:Name="HudButton" Content="FPS HUD: Off" Padding="14,8"
               Click="OnToggleHud"
-              ToolTip.Tip="Apple's Metal Performance HUD, an FPS overlay. Applies to this bottle only. Quit CrossOver and Steam before toggling."/>
-      <Button x:Name="MoviesButton" Grid.Column="2" Content="Movies: On" Padding="14,8" Margin="0,0,8,0"
+              ToolTip.Tip="Shows an FPS overlay in the game. Quit CrossOver and Steam before clicking, then start them again."/>
+      <Button x:Name="MoviesButton" Content="Movies: On" Padding="14,8"
               Click="OnToggleMovies"
-              ToolTip.Tip="Movie cutscenes crash the game under CrossOver. Skipping renames the KH2 movie folder so the game skips them instead of crashing. Reversible."/>
-      <Button Grid.Column="3" Content="Seed Generator" Padding="14,8" Margin="0,0,8,0"
+              ToolTip.Tip="Movie cutscenes crash the game under CrossOver. Skipping them avoids the crash. Click again to put them back."/>
+      <Border Classes="divider" Margin="6,4"/>
+      <Button Content="Seed Generator" Padding="14,8"
               Click="OnOpenSeedGenerator"
-              ToolTip.Tip="Open the official KH2 Randomizer seed generator. If it is not installed yet, this installs it first (a few minutes)."/>
-      <Button x:Name="TrackerButton" Grid.Column="4" Content="Tracker" Padding="14,8" Margin="0,0,8,0"
+              ToolTip.Tip="Opens the KH2 Randomizer seed generator. The first click installs it, which takes a few minutes."/>
+      <Button x:Name="TrackerButton" Content="Tracker" Padding="14,8"
               Click="OnTracker"
-              ToolTip.Tip="Open the KH2 item tracker next to the game, with auto-tracking. The first click installs it, which takes 15 to 30 minutes once; quit Steam and the game first."/>
-      <Button x:Name="BuildButton" Grid.Column="5" Content="Build" FontWeight="SemiBold"
-              Padding="18,8" Margin="0,0,8,0" Click="OnBuild"
-              ToolTip.Tip="Compile the enabled mods into the folder the game reads. Do this after any change: new seed, toggled mod, reordered list."/>
-      <Button x:Name="RunButton" Grid.Column="6" Content="Build &amp; Run" FontWeight="SemiBold"
+              ToolTip.Tip="Opens the KH2 item tracker, which marks off checks as you find them. The first click installs it, which takes 15 to 30 minutes. Quit Steam and the game first."/>
+      <Border Classes="divider" Margin="6,4"/>
+      <Button x:Name="BuildButton" Content="Build" FontWeight="SemiBold" Padding="18,8"
+              Click="OnBuild"
+              ToolTip.Tip="Applies the enabled mods to the game. Run it after any change to the list."/>
+      <Button x:Name="RunButton" Content="Build &amp; Run" FontWeight="SemiBold"
               Classes="accent" Padding="18,8" Click="OnBuildRun"
-              ToolTip.Tip="Build, then launch the game through CrossOver."/>
-    </Grid>
+              ToolTip.Tip="Builds, then launches the game through CrossOver."/>
+    </StackPanel>
 
     <!-- Log -->
-    <Border Grid.Row="4" Background="#181818" CornerRadius="8" Padding="8" Height="120">
+    <Border Grid.Row="5" Background="#181818" CornerRadius="8" Padding="8" Height="120">
       <ScrollViewer x:Name="LogScroll">
         <TextBlock x:Name="LogText" FontFamily="Menlo, monospace" FontSize="11"
                    TextWrapping="Wrap" Text="Ready."/>
       </ScrollViewer>
     </Border>
 
-    <TextBlock x:Name="VersionText" Grid.Row="5" HorizontalAlignment="Right"
+    <TextBlock x:Name="VersionText" Grid.Row="6" HorizontalAlignment="Right"
                Margin="0,6,2,0" FontSize="11" Opacity="0.4"/>
   </Grid>
 </Window>

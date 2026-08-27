@@ -261,10 +261,9 @@ public partial class MainWindow : Window
     {
         var total = _mods.Count;
         var enabled = _mods.Count(m => m.Enabled);
-        var tally = total == 0
-            ? "No mods installed yet."
-            : $"{total} mod{(total == 1 ? "" : "s")}, {enabled} enabled.";
-        OrderHint.Text = $"{tally}  Mods at the top win conflicts. Build after any change.";
+        ModCountText.Text = total == 0
+            ? "No mods installed"
+            : $"{total} mod{(total == 1 ? "" : "s")} · {enabled} enabled";
     }
 
     private static void PaintStatusRow(Border badge, TextBlock icon, TextBlock text, StatusRow row)
@@ -502,9 +501,8 @@ public partial class MainWindow : Window
         var turningOn = current != true;
         var confirmed = await ConfirmAsync(
             turningOn ? "Turn on the FPS HUD" : "Turn off the FPS HUD",
-            $"This changes the '{bottle.Name}' bottle only; nothing else on the Mac is affected. " +
-            "Quit CrossOver and Steam completely first, then relaunch them, the HUD change " +
-            "only applies to programs started after it.",
+            $"This affects the '{bottle.Name}' bottle only, nothing else on your Mac. " +
+            "Quit CrossOver and Steam first, then start them again for the change to take effect.",
             turningOn ? "Turn On" : "Turn Off");
         if (!confirmed)
             return;
@@ -550,10 +548,9 @@ public partial class MainWindow : Window
         {
             var repair = await ConfirmAsync(
                 "Repair the tracker",
-                "The tracker crashed last time, which usually means the bottle's .NET Framework " +
-                "is incomplete. Repair removes Wine's substitute and reinstalls the real " +
-                "framework, which takes 15 to 30 minutes. Quit the game and Steam in CrossOver " +
-                "before continuing.",
+                "The tracker crashed on startup, which usually means the bottle's .NET Framework " +
+                "install is incomplete. Repair reinstalls it from scratch and takes 15 to 30 " +
+                "minutes. Quit the game and Steam first.",
                 "Repair");
             if (!repair)
                 return;
@@ -586,10 +583,9 @@ public partial class MainWindow : Window
 
         var confirmed = await ConfirmAsync(
             "Install the item tracker",
-            "This downloads the community KH2 tracker (Dee-Ayy/KH2Tracker) and installs " +
-            $".NET Framework 4.8 into the '{bottle.Name}' bottle, which the tracker needs to run. " +
-            "The .NET install happens once and takes 15 to 30 minutes. " +
-            "Quit the game and Steam in CrossOver before continuing.",
+            "This downloads the KH2 item tracker and installs the .NET Framework it needs " +
+            $"into the '{bottle.Name}' bottle. The .NET step happens once and takes 15 to 30 " +
+            "minutes. Quit the game and Steam first.",
             "Install");
         if (!confirmed)
             return;
@@ -792,9 +788,8 @@ public partial class MainWindow : Window
         var download = await ConfirmAsync(
             "Install Re:Fined",
             "Re:Fined adds quality-of-life features: skippable cutscenes, soft reset, " +
-            "a prologue skip, faster menus, and more. Use it on its own for a normal " +
-            "playthrough or alongside a randomizer seed. It is a large download and " +
-            "takes a while.",
+            "a prologue skip, and faster menus. Use it on its own or alongside a randomizer " +
+            "seed. It is a large download, so give it a few minutes.",
             "Download");
         if (!download)
             return;
@@ -874,9 +869,9 @@ public partial class MainWindow : Window
 
         var confirmed = await ConfirmAsync(
             "Install the .NET 8 Desktop Runtime",
-            "Re:Fined runs on the .NET 8 Desktop Runtime, which is not in the " +
+            "Re:Fined needs the .NET 8 Desktop Runtime, which is not in the " +
             $"'{bottle.Name}' bottle yet. This is a one-time install of a few minutes. " +
-            "Quit the game and Steam in CrossOver before continuing.",
+            "Quit the game and Steam first.",
             "Install");
         if (!confirmed)
         {
