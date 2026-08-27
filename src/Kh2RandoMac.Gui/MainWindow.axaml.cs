@@ -126,6 +126,23 @@ public partial class MainWindow : Window
             var chosenApp = installed[i - 1];
             Log($"CrossOver: {chosenApp.Path}");
 
+            // Opening a bottle with a different copy makes CrossOver redo its setup of
+            // that bottle, which puts its own .NET back over the one the tracker needs.
+            // The cost is a repair, so say so rather than letting it look like a bug.
+            try
+            {
+                if (TrackerService.HasDotNet48(Bottle.Resolve(_config)))
+                {
+                    Log("Note: changing CrossOver makes it redo its setup of the bottle, which");
+                    Log("undoes the tracker's .NET install. Click Tracker and choose Repair once,");
+                    Log("with the game and Steam quit, and it will work again on this copy.");
+                }
+            }
+            catch
+            {
+                // Nothing set up yet, so there is nothing to disturb.
+            }
+
             // A bottle upgraded by a newer copy cannot be opened by an older one, and
             // the failure is a cryptic "failed to load start.exe" rather than anything
             // that names the cause.
@@ -794,7 +811,7 @@ public partial class MainWindow : Window
         {
             var proc = TrackerService.Launch(_workspace, bottle);
             Log("Launching the tracker...");
-            if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
+            if (await TrackerService.WaitUntilVisible(proc, TimeSpan.FromSeconds(60)))
                 Log("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
             else if (proc.HasExited)
             {

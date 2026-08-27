@@ -279,17 +279,28 @@ public class TrackerService
         }
     }
 
-    /// <summary>Poll until the tracker window is on screen or the timeout passes.</summary>
-    public static async Task<bool> WaitUntilVisible(TimeSpan timeout)
+    /// <summary>
+    /// Wait for the tracker to actually be up. A crashing WPF app still registers with
+    /// macOS for a moment before it dies, so the registration alone was reporting
+    /// success for a tracker that never drew anything: give up the moment the process
+    /// exits rather than believing the registration.
+    /// </summary>
+    public static async Task<bool> WaitUntilVisible(Process process, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < deadline)
         {
+            if (process.HasExited)
+                return false;
             if (IsTrackerVisible())
-                return true;
+            {
+                // Registered: give it a moment and make sure it is still alive.
+                await Task.Delay(1500);
+                return !process.HasExited;
+            }
             await Task.Delay(1000);
         }
-        return IsTrackerVisible();
+        return !process.HasExited && IsTrackerVisible();
     }
 
     /// <summary>Run a builtin in the bottle, recording what it said for field logs.</summary>

@@ -338,7 +338,7 @@ static async Task<int> Tracker()
     }
     var proc = TrackerService.Launch(workspace, bottle);
     Say("Tracker starting...");
-    if (await TrackerService.WaitUntilVisible(TimeSpan.FromSeconds(60)))
+    if (await TrackerService.WaitUntilVisible(proc, TimeSpan.FromSeconds(60)))
         Say("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
     else if (proc.HasExited)
     {
