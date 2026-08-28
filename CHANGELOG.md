@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Build & Run now goes straight into KH2 instead of leaving you on the
+  collection's game-select menu, using the mod loader's own quick-launch rather
+  than starting the game's exe behind Steam's back
+- The seed generator gets a Retina icon; it was built at single resolution and
+  looked soft next to other apps
+
 ## 0.3.1 (2026-08-28)
 
 - Fixed the app reporting a bottle as running when it was not, which left

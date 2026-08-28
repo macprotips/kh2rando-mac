@@ -11,6 +11,11 @@ public class PanaceaService
 {
     public const string PanaceaDllName = "OpenKH.Panacea.dll";
 
+    public const string SettingsFileName = "panacea_settings.txt";
+
+    /// <summary>Panacea's name for KH2, the value quick_launch takes to jump into it.</summary>
+    public const string Kh2LaunchCode = "kh2";
+
     public static readonly string[] DependencyDlls =
     {
         "avcodec-vgmstream-59.dll",
@@ -111,16 +116,34 @@ public class PanaceaService
             File.Copy(Path.Combine(payload, dll), Path.Combine(depDir, dll), true);
 
         var modPathWin = bottle.ToWindowsPath(workspace.CompiledModRoot);
-        File.WriteAllLines(Path.Combine(gameDir, "panacea_settings.txt"), new[]
+        File.WriteAllLines(Path.Combine(gameDir, SettingsFileName), new[]
         {
             $"mod_path={modPathWin}",
             "show_console=false",
         });
     }
 
+    /// <summary>
+    /// Set one key in panacea_settings.txt, dropping every existing copy of it first.
+    /// Mods Manager appends quick_launch on each run rather than replacing it, so a
+    /// file that has been through it on Windows carries the key many times over.
+    /// </summary>
+    public static void SetSetting(string gameDir, string key, string value)
+    {
+        var path = Path.Combine(gameDir, SettingsFileName);
+        var prefix = key + "=";
+        var lines = File.Exists(path)
+            ? File.ReadAllLines(path)
+                .Where(l => !l.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .ToList()
+            : new List<string>();
+        lines.Add(prefix + value);
+        File.WriteAllLines(path, lines);
+    }
+
     public void Uninstall(string gameDir)
     {
-        foreach (var f in new[] { "version.dll", "DBGHELP.dll", "panacea_settings.txt" })
+        foreach (var f in new[] { "version.dll", "DBGHELP.dll", SettingsFileName })
         {
             var path = Path.Combine(gameDir, f);
             if (File.Exists(path))
@@ -133,5 +156,5 @@ public class PanaceaService
 
     public static bool IsInstalled(string gameDir) =>
         (File.Exists(Path.Combine(gameDir, "version.dll")) || File.Exists(Path.Combine(gameDir, "DBGHELP.dll")))
-        && File.Exists(Path.Combine(gameDir, "panacea_settings.txt"));
+        && File.Exists(Path.Combine(gameDir, SettingsFileName));
 }
