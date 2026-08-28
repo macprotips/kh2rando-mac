@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Setup now installs the .NET Framework the item tracker needs, so the Tracker
+  button works straight away instead of meeting a multi-minute install the first
+  time it is pressed. Setup already requires a quiet bottle, which that install
+  also needs, so it costs no new restriction. A failure there is a warning only;
+  modding is unaffected and Tracker still installs on demand
 - A Change Folder button on the Game row points the app at a different copy of
   the game, which previously took deleting the config by hand
 - Setup asks which copy to use when it finds more than one, instead of taking

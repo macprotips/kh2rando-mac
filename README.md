@@ -51,7 +51,7 @@ The detailed version with checkpoints and troubleshooting is the
    KH2 Rando Manager.app to Applications.
 2. Quit Steam and the game inside CrossOver, then open KH2 Rando Manager and click
    Run Setup. It finds your game, installs the Panacea mod loader and LuaBackend
-   into it, and configures the bottle.
+   into it, configures the bottle, and gets the item tracker ready. A few minutes.
 3. Click Extract Game Data (one time, 10 to 20 minutes, about 30 GB).
 4. Click Install GoA. This is the Garden of Assemblage mod every seed builds on.
 5. Click Movies to set "Movies: Skipped". Cutscenes crash the game under CrossOver;

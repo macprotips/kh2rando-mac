@@ -31,9 +31,34 @@ public class SetupService
         install.Bottle.EnsureDllOverrides(Bottle.RequiredOverrides);
         log($"Bottle DLL overrides set ({string.Join(", ", Bottle.RequiredOverrides)}).");
 
+        await SetUpTrackerIfPossible(install.Bottle, workspace, log);
+
         WarnAboutStaleDocScripts(install.Bottle, log);
 
         config.Save();
+    }
+
+    /// <summary>
+    /// Get the item tracker ready while the bottle is already quiet. Its .NET Framework
+    /// is the one slow, bottle-exclusive step in the app, and leaving it until someone
+    /// clicks Tracker means meeting that wall at the worst moment, usually with the game
+    /// open. Setup already demands the bottle to itself, so it costs nothing extra here.
+    /// The tracker is not needed to build or play mods, so failing to set it up is worth
+    /// a warning and nothing more; the Tracker button still installs on demand.
+    /// </summary>
+    private static async Task SetUpTrackerIfPossible(Bottle bottle, Workspace workspace, Action<string> log)
+    {
+        if (bottle.Platform != WinePlatform.CrossOver)
+            return;
+        try
+        {
+            await new TrackerService().EnsureInstalled(workspace, bottle, log);
+        }
+        catch (Exception ex)
+        {
+            log($"WARNING: could not set up the item tracker ({ex.Message}).");
+            log("Modding is unaffected. Click Tracker when you want it and it will finish then.");
+        }
     }
 
     /// <summary>

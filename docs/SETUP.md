@@ -85,8 +85,14 @@ next.
 2. In KH2 Rando Manager, click Run Setup. It finds your game automatically, installs
    the mod loader into it, and configures the bottle. Watch the messages in the log
    panel at the bottom; it ends with "Setup complete."
+   - It also installs the .NET Framework the item tracker needs into the bottle,
+     which is the slow part and why Setup takes a few minutes. Doing it here means
+     the Tracker button works straight away later, while the bottle is already quiet.
+     If that step fails, modding still works and Tracker installs it on demand.
    - If it cannot find the game, it asks you to pick the game folder yourself
      (the folder containing `KINGDOM HEARTS II FINAL MIX.exe`).
+   - If you have more than one copy of the game, it asks which to use. The Change
+     Folder button beside "Game" switches copies later.
 3. Click Extract Game Data. This unpacks the game's files so mods can be built
    against them. One time only, 10 to 20 minutes, about 30 GB. Leave the app open.
 
