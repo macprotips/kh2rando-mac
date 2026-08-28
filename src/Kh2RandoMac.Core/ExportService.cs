@@ -10,6 +10,9 @@ namespace Kh2RandoMac.Core;
 public static class ExportService
 {
     public const string ModsFolderName = "mods";
+    /// <summary>Companion to the load order: where every mod sits, enabled or not.</summary>
+    public const string DisplayOrderFileName = "mod-order.txt";
+
     public const string OrderFileName = "mods-KH2.txt";
     public const string ReadmeName = "README.txt";
     public const string FolderName = "KH2 Rando Export";
@@ -50,6 +53,10 @@ public static class ExportService
         // which mod wins a conflict.
         if (File.Exists(workspace.EnabledModsFile))
             File.Copy(workspace.EnabledModsFile, Path.Combine(destination, OrderFileName), true);
+        // The arrangement of the disabled mods travels alongside it, so an imported set
+        // looks the way it did rather than sorting them to the bottom.
+        if (File.Exists(workspace.ModOrderFile))
+            File.Copy(workspace.ModOrderFile, Path.Combine(destination, DisplayOrderFileName), true);
 
         File.WriteAllText(Path.Combine(destination, ReadmeName), Readme(mods.Count));
         return destination;

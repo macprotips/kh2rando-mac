@@ -40,6 +40,22 @@ public class Workspace
     public void SaveEnabledMods(IEnumerable<string> mods) =>
         File.WriteAllLines(EnabledModsFile, mods);
 
+    /// <summary>
+    /// Display order for every mod, enabled or not. mods-KH2.txt is OpenKH's own file
+    /// and lists only the enabled ones, so a mod that is switched off has nowhere to
+    /// record its place. This sits beside it rather than changing a format the Windows
+    /// tool also reads; absent, the old enabled-first ordering is used.
+    /// </summary>
+    public string ModOrderFile => Path.Combine(Root, "mod-order.txt");
+
+    public List<string> ModOrder() =>
+        File.Exists(ModOrderFile)
+            ? File.ReadAllLines(ModOrderFile).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList()
+            : new List<string>();
+
+    public void SaveModOrder(IEnumerable<string> mods) =>
+        File.WriteAllLines(ModOrderFile, mods);
+
     /// <summary>All installed mod names ("author/repo" or plain names for zip installs).</summary>
     public List<string> InstalledMods() => ScanMods(ModsDir);
 

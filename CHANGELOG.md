@@ -14,6 +14,17 @@
 - Setup no longer collapses one game folder seen from several bottles into a
   single choice. A game on an external drive is commonly visible from all of
   them, and picking one silently decided which bottle got modded
+- Reordering a mod that is switched off now sticks. The move buttons acted on any
+  row but only the enabled mods had their places recorded, so the list snapped back
+  on the next refresh. A companion file records where every mod sits, leaving
+  OpenKH's mods-KH2.txt exactly as it was, and export and import carry it
+- Switching a mod off and on again returns it to where it was instead of jumping it
+  to the top. A mod the order has never seen still goes to the top
+- Build no longer destroys the previous build before it starts. It builds alongside
+  and swaps at the end, so a build that fails part way leaves the working mods in
+  place instead of nothing at all
+- Switching bottles takes the store from the bottle being switched to, rather than
+  carrying the old setting over and calling an Epic copy Steam
 - A progress strip above the log shows what Setup is doing and how far along it
   is. Downloads report real percentages; steps that cannot say, such as installers
   running inside the bottle, show an indeterminate bar rather than a made-up

@@ -160,7 +160,9 @@ public partial class MainWindow : Window
     private void SetUpBottlePicker()
     {
         BottlePicker.SelectionChanged += OnBottleSelected;
-        RefreshBottlePicker();
+        // The first refresh supplies the real list moments later; this only avoids the
+        // row flickering into view once the window is already up.
+        try { RefreshBottlePicker(Bottle.Discover()); } catch { /* refresh will retry */ }
     }
 
     /// <summary>
@@ -169,18 +171,8 @@ public partial class MainWindow : Window
     /// open, and a menu built at launch would offer bottles that no longer exist and
     /// hide the one they just made.
     /// </summary>
-    private void RefreshBottlePicker()
+    private void RefreshBottlePicker(List<Bottle> found)
     {
-        List<Bottle> found;
-        try
-        {
-            found = Bottle.Discover();
-        }
-        catch
-        {
-            return; // Unreadable bottles directory; leave whatever is on screen.
-        }
-
         var names = found.Select(b => b.Name).ToList();
         var unchanged = names.SequenceEqual(_bottles.Select(b => b.Name));
         _bottles = found;
@@ -249,21 +241,24 @@ public partial class MainWindow : Window
             // Current bottle gone or unreadable: nothing left behind to warn about.
         }
 
-        // Setting the loader up in a bottle that cannot reach the game leaves someone
-        // configured to a bottle that will not launch, with nothing on screen saying so.
-        var reachable = await Task.Run(() =>
+        // Ask detection what this bottle knows about the game. Two things come out of
+        // it: whether the bottle can reach the copy at all, and which store it belongs
+        // to there. Carrying the current launcher over would happily call an Epic copy
+        // Steam and configure LuaBackend and the launch route for the wrong one.
+        var (detected, checkFailed) = await Task.Run<(GameInstall?, bool)>(() =>
         {
             try
             {
                 var full = Path.GetFullPath(_config.GameDir!);
-                return GameLocator.FindAll().Any(g => g.Bottle.Name == target.Name
-                    && Path.GetFullPath(g.GameDirMac) == full);
+                return (GameLocator.FindAll().FirstOrDefault(g => g.Bottle.Name == target.Name
+                    && Path.GetFullPath(g.GameDirMac) == full), false);
             }
             catch
             {
-                return true; // Cannot tell; do not invent a warning.
+                return (null, true); // Cannot tell; do not invent a warning.
             }
         });
+        var reachable = detected != null || checkFailed;
 
         var message =
             $"'{target.Name}' needs the mod loader, the DLL overrides and the runtimes " +
@@ -283,8 +278,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        await RunTask($"Switch to bottle '{target.Name}'", () =>
-            RunSetupFor(new GameInstall(target, _config.GameDir!, _config.Launcher)));
+        var install = detected ?? new GameInstall(target, _config.GameDir!, _config.Launcher);
+        await RunTask($"Switch to bottle '{target.Name}'", () => RunSetupFor(install));
         SelectConfiguredBottle();
     }
 
@@ -598,7 +593,7 @@ public partial class MainWindow : Window
 
     private record StatusSnapshot(
         StatusRow Game, string? GamePath, StatusRow Loader, StatusRow Data, List<ModInfo> Mods,
-        bool? MoviesSkipped, bool? HudEnabled);
+        bool? MoviesSkipped, bool? HudEnabled, List<Bottle> Bottles);
 
     /// <summary>Gathers state off the UI thread (filesystem scans can block on slow drives), then paints.</summary>
     private async Task RefreshAllAsync()
@@ -647,8 +642,13 @@ public partial class MainWindow : Window
             }
             bool? hudEnabled = null;
             try { hudEnabled = MetalHudService.IsEnabled(Bottle.Resolve(config)); } catch { }
+            // Discovery scans the bottles folder and /Applications; it belongs out here
+            // with the other filesystem work, not on the UI thread during the repaint.
+            List<Bottle> bottles;
+            try { bottles = Bottle.Discover(); } catch { bottles = new List<Bottle>(); }
+
             return (config, workspace, new StatusSnapshot(gameRow, config.GameDir, loaderRow, dataRow, mods,
-                moviesSkipped, hudEnabled));
+                moviesSkipped, hudEnabled, bottles));
         });
 
         _config = snapshot.config;
@@ -658,7 +658,7 @@ public partial class MainWindow : Window
         PaintStatusRow(GameStatusBadge, GameStatusIcon, GameStatusText, status.Game);
         PaintStatusRow(LoaderStatusBadge, LoaderStatusIcon, LoaderStatusText, status.Loader);
         PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
-        RefreshBottlePicker();
+        RefreshBottlePicker(status.Bottles);
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
@@ -710,6 +710,9 @@ public partial class MainWindow : Window
     {
         if (_refreshing)
             return;
+        // Both files: the enabled list drives the build and is OpenKH's format, the
+        // order file records where every mod sits so a disabled one keeps its place.
+        _workspace.SaveModOrder(_mods.Select(m => m.Name));
         _workspace.SaveEnabledMods(_mods.Where(m => m.Enabled).Select(m => m.Name));
         UpdateModCount();
     }

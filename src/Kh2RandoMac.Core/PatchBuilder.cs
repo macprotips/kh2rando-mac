@@ -37,18 +37,14 @@ public class PatchBuilder
             progress?.Invoke("WARNING: Kingdom Hearts is running. This replaces the mods it is reading; " +
                 "quit the game and build again if it misbehaves.");
 
-        if (Directory.Exists(_workspace.CompiledModDir))
-        {
-            try
-            {
-                Directory.Delete(_workspace.CompiledModDir, true);
-            }
-            catch (Exception ex)
-            {
-                progress?.Invoke($"Warning: could not fully clean the mod directory: {ex.Message}");
-            }
-        }
-        Directory.CreateDirectory(_workspace.CompiledModDir);
+        // Build beside the live folder and swap at the end. Wiping first meant a build
+        // that failed part way through left neither the new mods nor the previous
+        // working ones, and the only way back was to build again and hope.
+        var final = _workspace.CompiledModDir;
+        var staging = final + ".building";
+        if (Directory.Exists(staging))
+            Directory.Delete(staging, true);
+        Directory.CreateDirectory(staging);
 
         if (mods.Count == 0)
             progress?.Invoke("No mods enabled, building an empty (vanilla) mod folder.");
@@ -56,30 +52,45 @@ public class PatchBuilder
         var patcher = new PatcherProcessor();
         var packageMap = new ConcurrentDictionary<string, string>();
 
-        for (var i = mods.Count - 1; i >= 0; i--)
+        try
         {
-            var mod = mods[i];
-            progress?.Invoke($"Building {mod.Metadata!.Title ?? mod.Name}...");
-            NormalizePathSeparators(mod.Metadata.Assets);
-            patcher.Patch(
-                _workspace.GameDataDir,
-                _workspace.CompiledModDir,
-                mod.Metadata,
-                mod.Path,
-                platform: 2, // PC
-                fastMode: false,
-                packageMap: packageMap,
-                LaunchGame: Workspace.Game,
-                Language: languageFolder == "jp" ? "jp" : "en",
-                Tests: false,
-                collectionOptionalEnabledMods: new Dictionary<string, bool>());
+            for (var i = mods.Count - 1; i >= 0; i--)
+            {
+                var mod = mods[i];
+                progress?.Invoke($"Building {mod.Metadata!.Title ?? mod.Name}...");
+                NormalizePathSeparators(mod.Metadata.Assets);
+                patcher.Patch(
+                    _workspace.GameDataDir,
+                    staging,
+                    mod.Metadata,
+                    mod.Path,
+                    platform: 2, // PC
+                    fastMode: false,
+                    packageMap: packageMap,
+                    LaunchGame: Workspace.Game,
+                    Language: languageFolder == "jp" ? "jp" : "en",
+                    Tests: false,
+                    collectionOptionalEnabledMods: new Dictionary<string, bool>());
+            }
+
+            using (var writer = new StreamWriter(Path.Combine(staging, "patch-package-map.txt")))
+                foreach (var entry in packageMap)
+                    writer.WriteLine(entry.Key + " $$$$ " + entry.Value);
+
+            // Swap only now that everything succeeded. Both paths are inside the workspace,
+            // so this is a rename rather than a copy however large the build is.
+            if (Directory.Exists(final))
+                Directory.Delete(final, true);
+            Directory.CreateDirectory(Path.GetDirectoryName(final)!);
+            Directory.Move(staging, final);
+        }
+        finally
+        {
+            if (Directory.Exists(staging))
+                Directory.Delete(staging, true);
         }
 
-        using var writer = new StreamWriter(Path.Combine(_workspace.CompiledModDir, "patch-package-map.txt"));
-        foreach (var entry in packageMap)
-            writer.WriteLine(entry.Key + " $$$$ " + entry.Value);
-
-        progress?.Invoke($"Build complete: {mods.Count} mod(s) → {_workspace.CompiledModDir}");
+        progress?.Invoke($"Build complete: {mods.Count} mod(s) → {final}");
     }
 
     /// <summary>

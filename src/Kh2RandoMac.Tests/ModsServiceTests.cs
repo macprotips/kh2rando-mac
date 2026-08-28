@@ -150,3 +150,100 @@ public class ModsServiceTests
         Assert.Contains("bbb", names.Skip(2));
     }
 }
+
+public class ModOrderTests : IDisposable
+{
+    private readonly string _root;
+    private readonly Workspace _workspace;
+
+    public ModOrderTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        _workspace = new Workspace(_root);
+        _workspace.EnsureDirectories();
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, true); } catch { }
+    }
+
+    private void MakeMod(string name)
+    {
+        var dir = _workspace.ModPath(name);
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "mod.yml"), "title: " + name);
+    }
+
+    [Fact]
+    public void List_WithoutASavedOrder_PutsEnabledFirstAsItAlwaysHas()
+    {
+        MakeMod("alpha");
+        MakeMod("beta");
+        MakeMod("gamma");
+        _workspace.SaveEnabledMods(new[] { "gamma" });
+
+        var names = new ModsService(_workspace).List().Select(m => m.Name).ToList();
+        Assert.Equal("gamma", names[0]);
+        Assert.Equal(3, names.Count);
+    }
+
+    [Fact]
+    public void List_HonoursTheSavedOrderIncludingDisabledMods()
+    {
+        MakeMod("alpha");
+        MakeMod("beta");
+        MakeMod("gamma");
+        // beta is disabled but sits between two enabled mods.
+        _workspace.SaveModOrder(new[] { "gamma", "beta", "alpha" });
+        _workspace.SaveEnabledMods(new[] { "gamma", "alpha" });
+
+        var names = new ModsService(_workspace).List().Select(m => m.Name).ToList();
+        Assert.Equal(new[] { "gamma", "beta", "alpha" }, names);
+    }
+
+    [Fact]
+    public void List_AppendsModsTheSavedOrderHasNotSeenYet()
+    {
+        MakeMod("alpha");
+        MakeMod("beta");
+        _workspace.SaveModOrder(new[] { "beta" });
+        _workspace.SaveEnabledMods(Array.Empty<string>());
+
+        var names = new ModsService(_workspace).List().Select(m => m.Name).ToList();
+        Assert.Equal(new[] { "beta", "alpha" }, names);
+    }
+
+    [Fact]
+    public void SetEnabled_KeepsAModWhereItSatRatherThanJumpingItToTheTop()
+    {
+        MakeMod("alpha");
+        MakeMod("beta");
+        MakeMod("gamma");
+        _workspace.SaveModOrder(new[] { "alpha", "beta", "gamma" });
+        _workspace.SaveEnabledMods(new[] { "alpha", "gamma" });
+
+        var service = new ModsService(_workspace);
+        service.SetEnabled("beta", true);
+
+        Assert.Equal(new[] { "alpha", "beta", "gamma" }, _workspace.EnabledMods());
+        Assert.Equal(new[] { "alpha", "beta", "gamma" },
+            service.List().Select(m => m.Name).ToArray());
+    }
+
+    [Fact]
+    public void SetEnabled_OffThenOnReturnsAModToItsOriginalPlace()
+    {
+        MakeMod("alpha");
+        MakeMod("beta");
+        MakeMod("gamma");
+        _workspace.SaveModOrder(new[] { "alpha", "beta", "gamma" });
+        _workspace.SaveEnabledMods(new[] { "alpha", "beta", "gamma" });
+
+        var service = new ModsService(_workspace);
+        service.SetEnabled("beta", false);
+        service.SetEnabled("beta", true);
+
+        Assert.Equal(new[] { "alpha", "beta", "gamma" }, _workspace.EnabledMods());
+    }
+}

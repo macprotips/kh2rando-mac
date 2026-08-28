@@ -83,6 +83,11 @@ public static class ImportService
             if (File.Exists(workspace.EnabledModsFile))
                 File.Copy(workspace.EnabledModsFile, workspace.EnabledModsFile + ".bak", true);
             File.Copy(order, workspace.EnabledModsFile, true);
+            var display = Path.Combine(folder, ExportService.DisplayOrderFileName);
+            if (File.Exists(display))
+                File.Copy(display, workspace.ModOrderFile, true);
+            else
+                File.Delete(workspace.ModOrderFile);
             log?.Invoke("Load order replaced (the previous one is kept as mods-KH2.txt.bak).");
         }
         return mods.Count;

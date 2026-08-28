@@ -259,19 +259,53 @@ public class ModsService
         var list = _workspace.EnabledMods();
         list.RemoveAll(m => string.Equals(m, match, StringComparison.OrdinalIgnoreCase));
         if (enabled)
-            list.Insert(0, match);
+            list.Insert(PlaceFor(match, list), match);
         _workspace.SaveEnabledMods(list);
+    }
+
+    /// <summary>
+    /// Where a mod being switched on belongs in the enabled list. A mod with a recorded
+    /// place goes back to it, so switching off and on again does not shuffle the load
+    /// order. One the order file has never seen goes to the top, which is where a mod
+    /// someone has just turned on is most likely wanted and what this did before.
+    /// </summary>
+    private int PlaceFor(string modName, List<string> enabled)
+    {
+        var order = _workspace.ModOrder();
+        var mine = order.FindIndex(o => string.Equals(o, modName, StringComparison.OrdinalIgnoreCase));
+        if (mine < 0)
+            return 0;
+        var after = enabled.FindIndex(e =>
+            order.FindIndex(o => string.Equals(o, e, StringComparison.OrdinalIgnoreCase)) > mine);
+        return after < 0 ? enabled.Count : after;
+    }
+
+    /// <summary>
+    /// The order mods are shown and built in. The saved order wins where it covers a
+    /// mod; anything it does not mention (a fresh install, or a workspace that predates
+    /// the file) falls back to enabled-first, which is what this did before there was
+    /// an order to consult.
+    /// </summary>
+    private List<string> DisplayOrder(List<string> installed, List<string> enabled)
+    {
+        var saved = _workspace.ModOrder();
+        var known = saved.Where(o => installed.Contains(o, StringComparer.OrdinalIgnoreCase)).ToList();
+        var rest = installed.Where(i => !known.Contains(i, StringComparer.OrdinalIgnoreCase)).ToList();
+        // Anything the order file does not cover keeps the arrangement it had before
+        // that file existed: enabled mods in the order mods-KH2.txt lists them, which is
+        // the load order someone set, then the remainder as found on disk.
+        return known
+            .Concat(enabled.Where(e => rest.Contains(e, StringComparer.OrdinalIgnoreCase)))
+            .Concat(rest.Where(i => !enabled.Contains(i, StringComparer.OrdinalIgnoreCase)))
+            .ToList();
     }
 
     public List<ModInfo> List()
     {
         var enabled = _workspace.EnabledMods();
         var result = new List<ModInfo>();
-        // Enabled mods first, in load order, then the rest.
         var installed = _workspace.InstalledMods();
-        var ordered = enabled.Where(e => installed.Contains(e, StringComparer.OrdinalIgnoreCase))
-            .Concat(installed.Where(i => !enabled.Contains(i, StringComparer.OrdinalIgnoreCase)));
-        foreach (var name in ordered)
+        foreach (var name in DisplayOrder(installed, enabled))
         {
             var path = _workspace.ModPath(name);
             Metadata? metadata = null;
