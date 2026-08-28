@@ -18,6 +18,9 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- Reset turns the FPS HUD back off. It is a bottle setting this app switched on, so
+  leaving it meant announcing the bottle was back to stock while it still drew an
+  overlay. Reset also names both .NET runtimes it cannot take back, not just one
 - The FPS HUD toggle refuses while the bottle is in use instead of only asking you
   to quit CrossOver. CrossOver rewrites that file on the way out, so the change was
   silently discarded if anything was running

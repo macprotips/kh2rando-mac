@@ -139,10 +139,27 @@ public class SetupService
             log("Movie folder restored.");
         }
 
+        // The overlay is a bottle setting this app turned on, so leaving it would mean
+        // saying the bottle is back to stock while it still shows an FPS counter.
+        if (MetalHudService.IsEnabled(bottle) == true)
+        {
+            MetalHudService.SetEnabled(bottle, false);
+            log("FPS HUD turned off.");
+        }
+
         log("The game is back to vanilla. Mods, seeds, and extracted data were kept;");
         log("run Setup again at any time to re-enable modding.");
+
+        // The runtimes are the one thing Reset cannot take back: uninstalling a .NET
+        // from a Wine prefix is not reliable, and leaving them costs only disk.
+        var runtimes = new List<string>();
         if (TrackerService.HasDotNet48(bottle))
-            log("The .NET the tracker uses is still in the bottle. It is harmless; delete the bottle in CrossOver to remove it.");
+            runtimes.Add(".NET Framework 4.8 (the item tracker)");
+        if (RefinedService.HasDesktopRuntime(bottle))
+            runtimes.Add(".NET 8 Desktop Runtime (Re:Fined)");
+        if (runtimes.Count > 0)
+            log($"Still in the bottle: {string.Join(" and ", runtimes)}. Harmless to leave; " +
+                "delete the bottle in CrossOver to be rid of them.");
     }
 
     /// <summary>
