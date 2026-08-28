@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.3 (2026-08-28)
 
 - A Bottle picker in the status header, shown when the machine has more than one.
   Switching sets the mod loader and runtimes up in the chosen bottle as part of the
@@ -50,8 +50,6 @@
 - Setup also installs the .NET 8 Desktop Runtime Re:Fined needs, so a Build with
   Re:Fined enabled never stops to install anything
 - Dropped the Reset note from the README and setup guide
-
-## 0.3.2 (2026-08-28)
 
 - Setup now installs the .NET Framework the item tracker needs, so the Tracker
   button works straight away instead of meeting a multi-minute install the first
