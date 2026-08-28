@@ -168,6 +168,13 @@ first, then leave it alone until the log says it is done. Every click after that
 opens the tracker in a few seconds, and it is fine to open it while the game is
 running.
 
+If you have more than one copy of CrossOver installed, a CrossOver row appears in
+the status panel. They share bottles, and a bottle can only be opened by a copy its
+own age or newer, so the app picks the right one and remembers it. You can change it
+there. After a change, or after CrossOver updates itself, CrossOver sets the bottle
+up again and puts its own .NET back; the app clears that the next time you click
+Tracker, which takes a few seconds.
+
 If the tracker crashes on startup instead of opening, click Tracker again: the app
 offers a Repair that reinstalls the bottle's .NET Framework cleanly (a few minutes,
 quit Steam first). This fixes bottles where an earlier install was left

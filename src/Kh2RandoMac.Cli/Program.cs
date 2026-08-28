@@ -331,6 +331,11 @@ static async Task<int> Tracker()
         Say("takes a few minutes. Quit the game and Steam in CrossOver first.");
         await new TrackerService().EnsureInstalled(workspace, bottle, Say);
     }
+    if (TrackerService.IsInstalled(workspace, bottle) && !TrackerService.PrepareForLaunch(bottle, Say))
+    {
+        Say("Could not clear Wine's .NET substitute. Quit the game and Steam, then try again.");
+        return 1;
+    }
     if (TrackerService.NeedsRuntimePin(bottle))
     {
         TrackerService.PinRuntime(bottle);

@@ -133,9 +133,8 @@ public partial class MainWindow : Window
             {
                 if (TrackerService.HasDotNet48(Bottle.Resolve(_config)))
                 {
-                    Log("Note: changing CrossOver makes it redo its setup of the bottle, which");
-                    Log("undoes the tracker's .NET install. Click Tracker and choose Repair once,");
-                    Log("with the game and Steam quit, and it will work again on this copy.");
+                    Log("Note: CrossOver will set the bottle up again for this copy the next time");
+                    Log("it runs. The tracker sorts itself out when you next click it.");
                 }
             }
             catch
@@ -742,6 +741,21 @@ public partial class MainWindow : Window
             if (TrackerService.IsInstalled(_workspace, bottle))
                 await LaunchTrackerWithSpinner(bottle);
             return;
+        }
+
+        // CrossOver reinstates its own .NET whenever it sets the bottle up again, which
+        // it does after any version change. Undo that here rather than launching into a
+        // crash and asking the user to run a repair: it takes seconds.
+        if (TrackerService.IsInstalled(_workspace, bottle))
+        {
+            var ready = true;
+            await RunTask("Prepare the tracker", () => Task.Run(() =>
+                ready = TrackerService.PrepareForLaunch(bottle, Log)));
+            if (!ready)
+            {
+                Log("Could not clear it. Quit the game and Steam, then click Tracker again.");
+                return;
+            }
         }
 
         if (TrackerService.IsInstalled(_workspace, bottle))

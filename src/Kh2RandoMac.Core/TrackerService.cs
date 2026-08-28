@@ -50,7 +50,7 @@ public class TrackerService
         var ms64 = new FileInfo(Path.Combine(bottle.DriveC, "windows", "system32", "mscoree.dll"));
         var ms32 = new FileInfo(Path.Combine(bottle.DriveC, "windows", "syswow64", "mscoree.dll"));
         FileLog.Write($"[tracker] detection: wpfgfx={wpf} clr={(clr.Exists ? clr.Length : 0)} " +
-            $"verdict={HasDotNet48(bottle)} mscoree={mscoree ?? "unset"} " +
+            $"verdict={HasDotNet48(bottle)} mono={MonoInstalled(bottle)} mscoree={mscoree ?? "unset"} " +
             $"loader64={(ms64.Exists ? ms64.Length : 0)} loader32={(ms32.Exists ? ms32.Length : 0)} " +
             $"bottle={bottle.Name}");
     }
@@ -69,8 +69,77 @@ public class TrackerService
     public static void PinRuntime(Bottle bottle) =>
         bottle.EnsureDllOverrides(new[] { "mscoree" });
 
+    /// <summary>
+    /// Whether Wine's own .NET substitute is registered in the bottle. CrossOver puts
+    /// it back whenever it sets a bottle up again, which it does after any version
+    /// change: a different copy opening the bottle, or CrossOver updating itself. When
+    /// it is present the tracker loads it in preference to the real framework and dies
+    /// on startup, however complete that framework is. Read from the registry file
+    /// rather than by running wine, so a status check never starts the bottle.
+    /// </summary>
+    public static bool MonoInstalled(Bottle bottle)
+    {
+        try
+        {
+            var systemReg = Path.Combine(bottle.Root, "system.reg");
+            return File.Exists(systemReg)
+                && File.ReadLines(systemReg).Any(l => l.Contains("Wine Mono", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Uninstall Wine's .NET substitute, which is all that stands between an installed
+    /// framework and a working tracker after CrossOver has set the bottle up again.
+    /// Takes seconds, where reinstalling the framework takes minutes. Returns whether
+    /// anything was removed.
+    /// </summary>
+    public static bool RemoveMono(Bottle bottle, Action<string>? log = null)
+    {
+        var removed = false;
+        foreach (var (id, name) in ParseUninstallerList(RunBuiltin(bottle, "uninstaller", "--list")))
+        {
+            if (!IsMonoPackage(name))
+                continue;
+            log?.Invoke($"Removing '{name}', which CrossOver reinstated and the tracker cannot use...");
+            RunBuiltin(bottle, "uninstaller", "--remove", id);
+            removed = true;
+        }
+        return removed;
+    }
+
+    /// <summary>
+    /// Get the bottle ready for the tracker and report whether it is.
+    ///
+    /// CrossOver sets a bottle up again the first time a different version opens it,
+    /// and that reinstates Wine's .NET substitute. The catch is that the setup runs as
+    /// part of whatever command triggered it, so checking beforehand sees a clean
+    /// bottle and checking after means the tracker has already crashed. Run a trivial
+    /// command first to let any pending setup happen, then clear the substitute out.
+    /// </summary>
+    public static bool PrepareForLaunch(Bottle bottle, Action<string>? log = null)
+    {
+        // Cheap no-op whose only job is to make CrossOver do any pending bottle setup now.
+        RunBuiltin(bottle, "cmd", "/c", "exit");
+        if (!MonoInstalled(bottle))
+            return true;
+        RemoveMono(bottle, log);
+        return !MonoInstalled(bottle);
+    }
+
+    /// <summary>The tracker's files and framework are present.</summary>
     public static bool IsInstalled(Workspace workspace, Bottle bottle) =>
         File.Exists(ExePath(workspace)) && HasDotNet48(bottle);
+
+    /// <summary>
+    /// Installed and actually able to run: the framework is present and Wine's
+    /// substitute is not sitting in front of it.
+    /// </summary>
+    public static bool IsReady(Workspace workspace, Bottle bottle) =>
+        IsInstalled(workspace, bottle) && !MonoInstalled(bottle);
 
     /// <summary>
     /// Download the tracker and, if needed, install .NET Framework 4.8 into the bottle.
@@ -97,7 +166,13 @@ public class TrackerService
         }
 
         if (!force && HasDotNet48(bottle))
+        {
+            // Framework already there: if CrossOver has put its substitute back, taking
+            // that away is enough and costs seconds rather than a full reinstall.
+            if (MonoInstalled(bottle))
+                RemoveMono(bottle, log);
             return;
+        }
 
         if (bottle.IsRunning())
             throw new InvalidOperationException(

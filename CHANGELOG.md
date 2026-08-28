@@ -13,6 +13,14 @@
   of how many mods are installed and enabled
 - Warns about mods confirmed to break current versions of the game, on install
   and again at build time
+- Works with any CrossOver you have installed, wherever it lives, including
+  older releases kept alongside the current one. Copies share bottles and a
+  bottle can only be opened by one its own age or newer, so the app matches
+  them up and remembers the choice; a picker appears when there is more than
+  one to choose from
+- The tracker recovers by itself after CrossOver changes version. CrossOver
+  sets the bottle up again and reinstates its own .NET, which the tracker
+  cannot use; clearing that now happens on the next click and takes seconds
 - Log button, which reveals the log file in Finder for bug reports
 - Fixed texture and model mods only partially applying: mod definitions written
   on Windows mix backslash and forward-slash paths, and the backslash entries
