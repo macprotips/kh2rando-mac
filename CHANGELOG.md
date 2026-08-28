@@ -1,14 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Setup also installs the .NET 8 Desktop Runtime Re:Fined needs, so a Build with
+  Re:Fined enabled never stops to install anything
+- Dropped the Reset note from the README and setup guide
+
 ## 0.3.2 (2026-08-28)
 
-- Setup now installs both bottle runtimes: the .NET Framework the item tracker
-  needs and the .NET 8 Desktop Runtime Re:Fined needs. Previously each was left
-  until first use, so the Tracker button and a Build with Re:Fined enabled could
-  each stop for a multi-minute install, usually with the game open. Setup already
-  requires a quiet bottle, which both installs need, so this costs no new
-  restriction. A failure in either is a warning only; modding is unaffected and
-  the feature installs on first use as before
+- Setup now installs the .NET Framework the item tracker needs, so the Tracker
+  button works straight away instead of meeting a multi-minute install the first
+  time it is pressed. Setup already requires a quiet bottle, which that install
+  also needs, so it costs no new restriction. A failure there is a warning only;
+  modding is unaffected and Tracker still installs on demand
 - A Change Folder button on the Game row points the app at a different copy of
   the game, which previously took deleting the config by hand
 - Setup asks which copy to use when it finds more than one, instead of taking
