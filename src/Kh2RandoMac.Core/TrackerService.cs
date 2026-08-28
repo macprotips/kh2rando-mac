@@ -337,22 +337,8 @@ public class TrackerService
     /// </summary>
     public static bool IsTrackerRunning()
     {
-        try
-        {
-            var psi = new ProcessStartInfo("/usr/bin/lsappinfo", "list")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            using var p = Process.Start(psi)!;
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(5000);
-            return output.Contains($"\"{ExeName}\" ASN", StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
+        return ShellCommand.Run("/usr/bin/lsappinfo", "list").Output
+            .Contains($"\"{ExeName}\" ASN", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

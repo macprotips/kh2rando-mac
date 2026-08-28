@@ -1,4 +1,3 @@
-using System.Diagnostics;
 
 namespace Kh2RandoMac.Core;
 
@@ -51,27 +50,11 @@ public static class CrossOverApp
         return found.ToList();
     }
 
-    private static List<string> Spotlight(string query)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo("/usr/bin/mdfind") { RedirectStandardOutput = true };
-            psi.ArgumentList.Add(query);
-            using var p = Process.Start(psi);
-            if (p == null)
-                return new List<string>();
-            var lines = p.StandardOutput.ReadToEnd()
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .Select(l => l.Trim())
-                .ToList();
-            p.WaitForExit(5000);
-            return lines;
-        }
-        catch
-        {
-            return new List<string>();
-        }
-    }
+    private static List<string> Spotlight(string query) =>
+        ShellCommand.Run("/usr/bin/mdfind", query).Output
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => l.Trim())
+            .ToList();
 
     /// <summary>A CrossOver app's full version, e.g. "27.0.0.40817".</summary>
     private static string? BundleVersion(string appPath) =>
@@ -225,26 +208,8 @@ public static class CrossOverApp
     /// <summary>Read one key with `defaults read`, from a domain or a plist path.</summary>
     private static string? ReadDefault(string domainOrPlist, string key)
     {
-        try
-        {
-            var psi = new ProcessStartInfo("/usr/bin/defaults")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            psi.ArgumentList.Add("read");
-            psi.ArgumentList.Add(domainOrPlist);
-            psi.ArgumentList.Add(key);
-            using var p = Process.Start(psi);
-            if (p == null)
-                return null;
-            var output = p.StandardOutput.ReadToEnd().Trim();
-            p.WaitForExit(3000);
-            return p.ExitCode == 0 && output.Length > 0 ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
+        var result = ShellCommand.Run("/usr/bin/defaults", "read", domainOrPlist, key);
+        var output = result.Output.Trim();
+        return result.Succeeded && output.Length > 0 ? output : null;
     }
 }

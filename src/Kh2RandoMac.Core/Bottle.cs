@@ -198,18 +198,8 @@ public class Bottle
     /// </summary>
     public static bool IsGameRunning()
     {
-        try
-        {
-            var psi = new ProcessStartInfo("/bin/ps", "-axo command") { RedirectStandardOutput = true };
-            using var p = Process.Start(psi)!;
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(3000);
-            return output.Contains(GameLocator.Kh2ExeName, StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
+        return ShellCommand.Run("/bin/ps", "-axo", "command").Output
+            .Contains(GameLocator.Kh2ExeName, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -228,32 +218,15 @@ public class Bottle
         // keyed by the prefix directory's device and inode, for exactly as long as the bottle
         // runs. Erring toward "running" is the safe direction: a false positive only asks the
         // user to quit the bottle; a false negative lets wineserver clobber our registry edit.
-        try
+        var parts = ShellCommand.Run("/usr/bin/stat", "-f", "%d:%i", Root).Output.Trim().Split(':');
+        if (parts.Length == 2 && long.TryParse(parts[0], out var dev) && long.TryParse(parts[1], out var ino))
         {
-            var psi = new ProcessStartInfo("/usr/bin/stat")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            psi.ArgumentList.Add("-f");
-            psi.ArgumentList.Add("%d:%i");
-            psi.ArgumentList.Add(Root);
-            using var p = Process.Start(psi)!;
-            var parts = p.StandardOutput.ReadToEnd().Trim().Split(':');
-            p.WaitForExit(3000);
-            if (parts.Length == 2 && long.TryParse(parts[0], out var dev) && long.TryParse(parts[1], out var ino))
-            {
-                // wineserver keeps this socket for exactly as long as the bottle runs,
-                // and it is keyed by the prefix's own inode, so it answers for this
-                // bottle rather than any bottle. When stat worked, trust it: falling
-                // through to a process scan on a quiet bottle is what produced
-                // "appears to be running" that no amount of quitting would clear.
-                return File.Exists($"/tmp/.wine-{GetUid()}/server-{dev:x}-{ino:x}/socket");
-            }
-        }
-        catch
-        {
-            // Fall through to the process scan.
+            // wineserver keeps this socket for exactly as long as the bottle runs, and
+            // it is keyed by the prefix's own inode, so it answers for this bottle
+            // rather than any bottle. When stat worked, trust it: falling through to a
+            // process scan on a quiet bottle is what produced "appears to be running"
+            // that no amount of quitting would clear.
+            return File.Exists($"/tmp/.wine-{GetUid()}/server-{dev:x}-{ino:x}/socket");
         }
 
         // Only reached when the socket could not be checked at all. Match a single
@@ -261,39 +234,19 @@ public class Bottle
         // process anywhere in the list: that reported every bottle as running as soon
         // as any wine process was alive, and CrossOver leaves those behind for a while
         // after Steam quits.
-        try
-        {
-            var psi = new ProcessStartInfo("/bin/ps", "-axo command") { RedirectStandardOutput = true };
-            using var p = Process.Start(psi)!;
-            var output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
-            return output.Split('\n').Any(line =>
-                (line.Contains(Root, StringComparison.Ordinal) ||
-                 line.Contains($"--bottle {Name}", StringComparison.Ordinal)) &&
-                (line.Contains("wine", StringComparison.OrdinalIgnoreCase) ||
-                 line.Contains(".exe", StringComparison.OrdinalIgnoreCase)));
-        }
-        catch
-        {
-            return false;
-        }
+        return ShellCommand.Run("/bin/ps", "-axo", "command").Output.Split('\n').Any(line =>
+            (line.Contains(Root, StringComparison.Ordinal) ||
+             line.Contains($"--bottle {Name}", StringComparison.Ordinal)) &&
+            (line.Contains("wine", StringComparison.OrdinalIgnoreCase) ||
+             line.Contains(".exe", StringComparison.OrdinalIgnoreCase)));
     }
 
-    private static uint GetUid()
-    {
-        try
-        {
-            var psi = new ProcessStartInfo("/usr/bin/id", "-u") { RedirectStandardOutput = true };
-            using var p = Process.Start(psi)!;
-            var output = p.StandardOutput.ReadToEnd().Trim();
-            p.WaitForExit(3000);
-            return uint.TryParse(output, out var uid) ? uid : 501;
-        }
-        catch
-        {
-            return 501;
-        }
-    }
+    /// <summary>The user id, for the wineserver socket path. Cached: it cannot change,
+    /// and this sits inside a check that runs on every refresh.</summary>
+    private static readonly Lazy<uint> _uid = new(() =>
+        uint.TryParse(ShellCommand.Run("/usr/bin/id", "-u").Output.Trim(), out var uid) ? uid : 501);
+
+    private static uint GetUid() => _uid.Value;
 
     /// <summary>What a program left behind after running inside the bottle.</summary>
     public record RunResult(int ExitCode, string Output, string Error)
@@ -448,7 +401,7 @@ public class Bottle
 
         if (File.Exists(UserReg))
             File.Copy(UserReg, UserReg + ".kh2rando.bak", true);
-        File.WriteAllLines(UserReg, lines);
+        AtomicFile.WriteAllLines(UserReg, lines);
     }
 
     /// <summary>Remove the given DLL overrides from the bottle registry (the reverse of EnsureDllOverrides).</summary>
@@ -480,6 +433,6 @@ public class Bottle
             .Select(i => lines[i])
             .ToList();
         File.Copy(UserReg, UserReg + ".kh2rando.bak", true);
-        File.WriteAllLines(UserReg, kept);
+        AtomicFile.WriteAllLines(UserReg, kept);
     }
 }

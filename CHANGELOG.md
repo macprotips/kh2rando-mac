@@ -14,6 +14,16 @@
 - Setup no longer collapses one game folder seen from several bottles into a
   single choice. A game on an external drive is commonly visible from all of
   them, and picking one silently decided which bottle got modded
+- The bottle registry, CrossOver's bottle config and this app's settings are all
+  written by staging beside the file and renaming into place, so an interrupted
+  write can no longer leave a truncated file where a working one was. Corrupting a
+  bottle's registry is the most expensive thing this app could do to a machine
+- The FPS HUD toggle refuses while the bottle is in use instead of only asking you
+  to quit CrossOver. CrossOver rewrites that file on the way out, so the change was
+  silently discarded if anything was running
+- Commands run against the system share one helper that drains both output streams
+  at once and gives up on a tool that will not answer, so neither can freeze the
+  window
 - Reordering a mod that is switched off now sticks. The move buttons acted on any
   row but only the enabled mods had their places recorded, so the list snapped back
   on the next refresh. A companion file records where every mod sits, leaving

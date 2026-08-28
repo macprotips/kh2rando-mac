@@ -57,12 +57,14 @@ public class PatchBuilder
             for (var i = mods.Count - 1; i >= 0; i--)
             {
                 var mod = mods[i];
-                progress?.Invoke($"Building {mod.Metadata!.Title ?? mod.Name}...");
-                NormalizePathSeparators(mod.Metadata.Assets);
+                // Null-checked in the validation pass above, before anything was moved.
+                var metadata = mod.Metadata!;
+                progress?.Invoke($"Building {metadata.Title ?? mod.Name}...");
+                NormalizePathSeparators(metadata.Assets);
                 patcher.Patch(
                     _workspace.GameDataDir,
                     staging,
-                    mod.Metadata,
+                    metadata,
                     mod.Path,
                     platform: 2, // PC
                     fastMode: false,

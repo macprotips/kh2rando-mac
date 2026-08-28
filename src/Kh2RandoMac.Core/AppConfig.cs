@@ -77,23 +77,6 @@ public class AppConfig
     public void Save(string? path = null)
     {
         path ??= AppPaths.ConfigFile;
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        // Write beside the target and move into place, so a crash mid-save cannot
-        // truncate the config. The staging name is unique per call: any two saves
-        // overlapping, whether from a second copy of the app or two operations in this
-        // one, would otherwise be writing the very same file, and one truncating the
-        // other's half-written text is how a config gets moved into place corrupt
-        // rather than merely stale.
-        var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
-        try
-        {
-            File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonOptions));
-            File.Move(tmp, path, true);
-        }
-        finally
-        {
-            if (File.Exists(tmp))
-                File.Delete(tmp);
-        }
+        AtomicFile.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
     }
 }

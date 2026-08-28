@@ -33,6 +33,12 @@ public static class MetalHudService
     {
         var path = ConfPath(bottle)
             ?? throw new InvalidOperationException("The FPS HUD toggle needs a CrossOver bottle.");
+        // CrossOver owns this file while the bottle is up and rewrites it on the way
+        // out, so an edit made now would simply disappear. Every other bottle-level
+        // change in the app refuses on the same grounds.
+        if (bottle.IsRunning())
+            throw new InvalidOperationException(
+                $"{bottle.WhatIsUsingIt()}, then try again. CrossOver would otherwise overwrite the change.");
         var lines = File.ReadAllLines(path).ToList();
         lines.RemoveAll(l => l.Trim().StartsWith("\"MTL_HUD_ENABLED\"", StringComparison.Ordinal));
 
@@ -57,6 +63,6 @@ public static class MetalHudService
         }
 
         File.Copy(path, path + ".kh2rando.bak", true);
-        File.WriteAllLines(path, lines);
+        AtomicFile.WriteAllLines(path, lines);
     }
 }

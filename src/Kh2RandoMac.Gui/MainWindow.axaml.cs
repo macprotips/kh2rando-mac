@@ -1033,6 +1033,17 @@ public partial class MainWindow : Window
             Log("The FPS HUD toggle works with CrossOver bottles only.");
             return;
         }
+        // Check before asking, as everywhere else: a refusal after the dialog reads as
+        // the button having done nothing.
+        if (bottle.IsRunning())
+        {
+            await NoticeAsync("Something is using the bottle",
+                "Changing the FPS HUD writes a bottle setting, and CrossOver would " +
+                "overwrite it on the way out.\n\n" +
+                $"{bottle.WhatIsUsingIt()}, then click FPS HUD again.");
+            return;
+        }
+
         var turningOn = current != true;
         var action = turningOn ? "Turn On" : "Turn Off";
         var confirmed = await ConfirmAsync(
