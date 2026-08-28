@@ -188,11 +188,28 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var go = await ConfirmAsync($"Use bottle '{target.Name}'",
-                $"'{target.Name}' gets its own mod loader and the runtimes the tracker and " +
-                "Re:Fined need, which takes a few minutes. Quit the game and Steam first.\n\n" +
-                $"'{_config.BottleName}' is left as it is; you can switch back at any time.",
-                "Set Up");
+            var leaving = _config.BottleName;
+            var leavingWasSetUp = false;
+            try
+            {
+                leavingWasSetUp = leaving != null && SetupService.HasBeenSetUp(Bottle.Resolve(_config));
+            }
+            catch
+            {
+                // Current bottle is gone or unreadable, so there is nothing left behind
+                // worth warning about.
+            }
+
+            var message =
+                $"'{target.Name}' needs the mod loader, the DLL overrides and the runtimes " +
+                "the tracker and Re:Fined use. That is a few minutes, and it runs now. " +
+                "Quit the game and Steam first.";
+            if (leavingWasSetUp)
+                message += $"\n\n'{leaving}' keeps the changes this app made to it. Reset only " +
+                    $"ever acts on the bottle in use, so if you want '{leaving}' back to stock, " +
+                    "cancel and run Reset first.";
+
+            var go = await ConfirmAsync($"Use bottle '{target.Name}'", message, "Set Up");
             if (!go)
             {
                 RevertBottleSelection(bottles);

@@ -145,6 +145,24 @@ public class SetupService
             log("The .NET the tracker uses is still in the bottle. It is harmless; delete the bottle in CrossOver to remove it.");
     }
 
+    /// <summary>
+    /// Whether this app has already changed the bottle. Any of the overrides it adds
+    /// being present is enough: those are what make a bottle non-stock, and they stay
+    /// behind if the user moves to a different bottle.
+    /// </summary>
+    public static bool HasBeenSetUp(Bottle bottle)
+    {
+        try
+        {
+            return MissingOverrides(bottle).Count < Bottle.RequiredOverrides.Length;
+        }
+        catch
+        {
+            // Unreadable registry: better to say nothing than to claim either way.
+            return false;
+        }
+    }
+
     /// <summary>Names of required overrides missing from the bottle registry (empty = healthy).</summary>
     public static List<string> MissingOverrides(Bottle bottle)
     {

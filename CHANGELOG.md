@@ -3,8 +3,10 @@
 ## Unreleased
 
 - A Bottle picker in the status header, shown when the machine has more than one.
-  Switching sets the mod loader and runtimes up in the chosen bottle; the old one
-  is left alone, so switching back is immediate
+  Switching sets the mod loader and runtimes up in the chosen bottle as part of the
+  switch, so there is no second step. When the bottle being left has already been
+  set up, the confirmation says so and points out that Reset only ever acts on the
+  bottle in use, so returning the old one to stock has to happen before switching
 - Setup no longer collapses one game folder seen from several bottles into a
   single choice. A game on an external drive is commonly visible from all of
   them, and picking one silently decided which bottle got modded
