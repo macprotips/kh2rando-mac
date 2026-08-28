@@ -21,8 +21,8 @@ Check you have:
 One thing to know before starting: this changes your CrossOver bottle so the game
 can load mods. Your bottle will no longer be a stock CrossOver setup, so if you hit
 a CrossOver problem, reproduce it in a clean version of CrossOver before asking
-CodeWeavers for help. The Reset button returns the bottle and the game to vanilla
-whenever you want.
+CodeWeavers for help. The Reset button undoes all of it whenever you want, apart
+from the .NET itself, which is harmless to leave.
 
 ## Part 1: Get the game running
 

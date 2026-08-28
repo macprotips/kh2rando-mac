@@ -81,7 +81,10 @@ public class SetupService
 
         // Registry first: it refuses while the bottle runs, and nothing should be
         // half-removed if the user needs to quit Steam and retry.
-        bottle.RemoveDllOverrides(Bottle.RequiredOverrides);
+        // mscoree is added only when the tracker is set up, so it is not in the
+        // required set, but Reset still has to take it away or the bottle keeps a
+        // change this app made.
+        bottle.RemoveDllOverrides(Bottle.RequiredOverrides.Append("mscoree"));
         log("Bottle DLL overrides removed.");
 
         new PanaceaService().Uninstall(gameDir);
@@ -99,6 +102,8 @@ public class SetupService
 
         log("The game is back to vanilla. Mods, seeds, and extracted data were kept;");
         log("run Setup again at any time to re-enable modding.");
+        if (TrackerService.HasDotNet48(bottle))
+            log("The .NET the tracker uses is still in the bottle. It is harmless; delete the bottle in CrossOver to remove it.");
     }
 
     /// <summary>Names of required overrides missing from the bottle registry (empty = healthy).</summary>

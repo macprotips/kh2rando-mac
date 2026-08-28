@@ -104,7 +104,7 @@ public class TrackerService
         {
             if (!IsMonoPackage(name))
                 continue;
-            log?.Invoke($"Removing '{name}', which CrossOver reinstated and the tracker cannot use...");
+            log?.Invoke($"Removing '{name}', Wine's own .NET, which the tracker cannot use...");
             RunBuiltin(bottle, "uninstaller", "--remove", id);
             removed = true;
         }

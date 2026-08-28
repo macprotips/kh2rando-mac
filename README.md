@@ -122,8 +122,9 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 - This changes your CrossOver bottle so the game can load mods: DLL overrides, and
   .NET inside the bottle if you use the item tracker. Your bottle is therefore no
   longer a stock CrossOver setup. If you hit a CrossOver problem, reproduce it in a
-  clean version of CrossOver before asking CodeWeavers for help. Reset returns the
-  bottle and the game to vanilla.
+  clean version of CrossOver before asking CodeWeavers for help. Reset undoes all of
+  it apart from the .NET itself, which is harmless to leave; deleting the bottle in
+  CrossOver removes that too.
 - No game assets are included or distributed. You need your own copy of the game.
 - Setup writes three DLL-override entries to the bottle registry. The registry file is
   backed up first (`user.reg.kh2rando.bak`) and setup refuses to run while the bottle

@@ -95,7 +95,8 @@ public partial class MainWindow : Window
             "That means your bottle is no longer a stock CrossOver setup. If you hit a " +
             "CrossOver problem, reproduce it in a clean version of CrossOver before asking " +
             "CodeWeavers for help.\n\n" +
-            "Reset returns the bottle and the game to vanilla whenever you want.");
+            "Reset undoes all of that whenever you want, apart from the .NET itself, " +
+            "which is harmless to leave.");
     }
 
     /// <summary>A message with a single acknowledging button.</summary>
@@ -196,7 +197,7 @@ public partial class MainWindow : Window
             try
             {
                 if (TrackerService.HasDotNet48(Bottle.Resolve(_config)))
-                    Log("The tracker will take a few extra seconds the first time you open it after this. Nothing else to do.");
+                    Log("The tracker takes up to half a minute longer the first time you open it after this. Nothing else to do.");
             }
             catch
             {
