@@ -24,6 +24,9 @@ public class AppConfig
     /// <summary>The Sikarugir wrapper .app when the game runs through one; null for CrossOver.</summary>
     public string? WrapperApp { get; set; }
 
+    /// <summary>Whether the first-run notice about bottle changes has been shown.</summary>
+    public bool NoticeShown { get; set; }
+
     /// <summary>
     /// Which CrossOver to use, when more than one is installed and they share bottles.
     /// Null means work it out from the bottle's own recorded version.

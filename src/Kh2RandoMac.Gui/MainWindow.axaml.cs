@@ -72,6 +72,70 @@ public partial class MainWindow : Window
 
         SetUpCrossOverPicker();
         _ = RefreshAllAsync();
+
+        // Shown once, after the window is up so it has something to sit over.
+        if (!_config.NoticeShown)
+            Opened += async (_, _) => await ShowFirstRunNotice();
+    }
+
+    /// <summary>
+    /// Said once, before anything has been changed: this app puts the bottle into a
+    /// state CrossOver did not ship, which matters if they ever need CrossOver's help.
+    /// </summary>
+    private async Task ShowFirstRunNotice()
+    {
+        if (_config.NoticeShown)
+            return;
+        _config.NoticeShown = true;
+        _config.Save();
+        await NoticeAsync("Before you start",
+            "This app changes your CrossOver bottle so the game can load mods. It adds a " +
+            "few DLL overrides, and if you use the item tracker it installs .NET into the " +
+            "bottle.\n\n" +
+            "That means your bottle is no longer a stock CrossOver setup. If you hit a " +
+            "CrossOver problem, reproduce it in a clean version of CrossOver before asking " +
+            "CodeWeavers for help.\n\n" +
+            "Reset returns the bottle and the game to vanilla whenever you want.");
+    }
+
+    /// <summary>A message with a single acknowledging button.</summary>
+    private async Task NoticeAsync(string title, string message)
+    {
+        var dialog = new Window
+        {
+            // The heading lives in the content, since these sheets do not always draw a
+            // title bar; naming the window too would print it twice where they do.
+            Title = "",
+            Width = 460,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        var ok = new Button { Content = "Got it", FontWeight = Avalonia.Media.FontWeight.SemiBold };
+        ok.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 14,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = title,
+                    FontSize = 15,
+                    FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                },
+                new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Children = { ok },
+                },
+            },
+        };
+        await dialog.ShowDialog(this);
     }
 
     /// <summary>
