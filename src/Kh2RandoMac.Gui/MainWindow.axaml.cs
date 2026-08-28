@@ -211,23 +211,48 @@ public partial class MainWindow : Window
             return;
         var target = _bottles[i];
 
-        if (_config.GameDir == null || !GameLocator.IsGameDir(_config.GameDir))
+        // Gather what the decision needs off the UI thread, then let BottleSwitch judge
+        // it; the rules live there so they can be tested.
+        var facts = await Task.Run(() => GatherSwitchFacts(target));
+        var plan = BottleSwitch.Plan(target, facts);
+
+        if (plan.Outcome != BottleSwitchOutcome.Ready)
         {
-            await NoticeAsync("No game folder yet",
-                "Run Setup first, so the app knows which copy of the game to install into.");
+            await NoticeAsync(plan.Title, plan.Message);
             SelectConfiguredBottle();
             return;
         }
 
-        // Check before asking, as everywhere else: a refusal after the dialog reads as
-        // the button having done nothing.
-        if (target.IsRunning())
+        if (!await ConfirmAsync(plan.Title, plan.Message, "Set Up"))
         {
-            await NoticeAsync("Something is using that bottle",
-                $"Setting '{target.Name}' up needs it to itself.\n\n" +
-                $"{target.WhatIsUsingIt()}, then choose it again.");
             SelectConfiguredBottle();
             return;
+        }
+
+        await RunTask($"Switch to bottle '{target.Name}'", () => RunSetupFor(plan.Install!));
+        SelectConfiguredBottle();
+    }
+
+    /// <summary>Read the machine for everything a bottle switch turns on.</summary>
+    private BottleSwitchFacts GatherSwitchFacts(Bottle target)
+    {
+        var gameDir = _config.GameDir;
+        var usable = gameDir != null && GameLocator.IsGameDir(gameDir);
+
+        GameInstall? detected = null;
+        var detectionFailed = false;
+        if (usable)
+        {
+            try
+            {
+                var full = Path.GetFullPath(gameDir!);
+                detected = GameLocator.FindAll().FirstOrDefault(g => g.Bottle.Name == target.Name
+                    && Path.GetFullPath(g.GameDirMac) == full);
+            }
+            catch
+            {
+                detectionFailed = true;
+            }
         }
 
         var leavingWasSetUp = false;
@@ -241,46 +266,8 @@ public partial class MainWindow : Window
             // Current bottle gone or unreadable: nothing left behind to warn about.
         }
 
-        // Ask detection what this bottle knows about the game. Two things come out of
-        // it: whether the bottle can reach the copy at all, and which store it belongs
-        // to there. Carrying the current launcher over would happily call an Epic copy
-        // Steam and configure LuaBackend and the launch route for the wrong one.
-        var (detected, checkFailed) = await Task.Run<(GameInstall?, bool)>(() =>
-        {
-            try
-            {
-                var full = Path.GetFullPath(_config.GameDir!);
-                return (GameLocator.FindAll().FirstOrDefault(g => g.Bottle.Name == target.Name
-                    && Path.GetFullPath(g.GameDirMac) == full), false);
-            }
-            catch
-            {
-                return (null, true); // Cannot tell; do not invent a warning.
-            }
-        });
-        var reachable = detected != null || checkFailed;
-
-        var message =
-            $"'{target.Name}' needs the mod loader, the DLL overrides and the runtimes " +
-            "the tracker and Re:Fined use. That is a few minutes, and it runs now. " +
-            "Quit the game and Steam first.";
-        if (!reachable)
-            message += $"\n\nNote that '{target.Name}' does not have this copy of the game in " +
-                "its library, so it will not be able to launch it until you add it there.";
-        if (leavingWasSetUp)
-            message += $"\n\n'{_config.BottleName}' keeps the changes this app made to it. Reset " +
-                $"only ever acts on the bottle in use, so if you want '{_config.BottleName}' back " +
-                "to stock, cancel and run Reset first.";
-
-        if (!await ConfirmAsync($"Use bottle '{target.Name}'", message, "Set Up"))
-        {
-            SelectConfiguredBottle();
-            return;
-        }
-
-        var install = detected ?? new GameInstall(target, _config.GameDir!, _config.Launcher);
-        await RunTask($"Switch to bottle '{target.Name}'", () => RunSetupFor(install));
-        SelectConfiguredBottle();
+        return new BottleSwitchFacts(_config.BottleName, _config.Launcher, gameDir, usable,
+            target.IsRunning(), target.WhatIsUsingIt(), detected, detectionFailed, leavingWasSetUp);
     }
 
     /// <summary>
