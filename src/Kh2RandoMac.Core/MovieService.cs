@@ -42,6 +42,10 @@ public static class MovieService
     /// <summary>Rename the movie folder away so the game skips all KH2 movies.</summary>
     public static void SkipMovies(string gameDir)
     {
+        if (Bottle.IsGameRunning())
+            throw new InvalidOperationException(
+                "Kingdom Hearts is running. Quit the game first: this renames a folder it has open.");
+
         var dir = FindKh2MovieDir(gameDir)
             ?? throw new InvalidOperationException("KH2 movie folder not found in the game install.");
         if (dir.EndsWith(DisabledSuffix, StringComparison.Ordinal))
@@ -52,6 +56,10 @@ public static class MovieService
     /// <summary>Rename the movie folder back so movies play again.</summary>
     public static void RestoreMovies(string gameDir)
     {
+        if (Bottle.IsGameRunning())
+            throw new InvalidOperationException(
+                "Kingdom Hearts is running. Quit the game first: this renames a folder it has open.");
+
         var dir = FindKh2MovieDir(gameDir)
             ?? throw new InvalidOperationException("KH2 movie folder not found in the game install.");
         if (!dir.EndsWith(DisabledSuffix, StringComparison.Ordinal))

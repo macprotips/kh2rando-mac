@@ -192,6 +192,27 @@ public class Bottle
     }
 
     /// <summary>
+    /// Whether KH2 itself is running, as opposed to anything in the bottle. Renaming
+    /// the movie folder or rebuilding the mod folder underneath a live game is asking
+    /// for a crash, but Steam or the tracker being open is no reason to refuse.
+    /// </summary>
+    public static bool IsGameRunning()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("/bin/ps", "-axo command") { RedirectStandardOutput = true };
+            using var p = Process.Start(psi)!;
+            var output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit(3000);
+            return output.Contains(GameLocator.Kh2ExeName, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// What to quit, for a message. The tracker runs inside the bottle and this app
     /// starts it, so it is the thing most likely to be holding a bottle open while the
     /// user is certain they quit everything: name it rather than listing Steam again.

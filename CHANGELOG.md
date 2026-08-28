@@ -7,6 +7,12 @@
   quit them, and blocked the tracker and Re:Fined installs
 - Installs that need the bottle to themselves now say so before asking rather
   than after, so a refusal does not look like the button doing nothing
+- Messages about a busy bottle name the item tracker when it is the tracker
+  holding it open. It runs inside the bottle and this app starts it, so it was
+  the likeliest cause of being told to quit things you had already quit
+- Skipping or restoring movies refuses while the game is running, since it
+  renames a folder the game has open, and Build says so if the game is running
+  while it replaces the mods being read
 
 ## 0.3.0 (2026-08-27)
 

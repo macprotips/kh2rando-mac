@@ -33,6 +33,10 @@ public class PatchBuilder
                     "only its always-on assets will be built.");
         }
 
+        if (Bottle.IsGameRunning())
+            progress?.Invoke("WARNING: Kingdom Hearts is running. This replaces the mods it is reading; " +
+                "quit the game and build again if it misbehaves.");
+
         if (Directory.Exists(_workspace.CompiledModDir))
         {
             try
