@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-08-27)
 
 - Re:Fined support: an Install Re:Fined button, and the .NET runtime it needs is
   installed into the bottle on the first build. Use it on its own for a normal

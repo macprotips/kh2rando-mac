@@ -6,5 +6,5 @@ namespace Kh2RandoMac.Core;
 /// </summary>
 public static class AppInfo
 {
-    public const string Build = "0.3.0-dev";
+    public const string Build = "0.3.0";
 }
