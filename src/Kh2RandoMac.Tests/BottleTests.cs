@@ -119,24 +119,43 @@ public class BottleTests
     [Fact]
     public void DescribeAll_GivesEveryCopyADistinctLabel()
     {
-        // Real machine: five copies, two pairs sharing a name and version, and two of
-        // those in folders that both end in "Applications".
+        // Real machine: seven copies, sharing names and versions in the ways that
+        // actually happen. Every version here is one this test states, not one read
+        // off the machine running it, so the labels are the same everywhere.
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var apps = new List<(string Path, Version Version)>
+        var apps = new List<(string Path, Version Version, string VersionText)>
         {
-            ("/Applications/CrossOver Preview.app", new Version("27.0.0.40817")),
-            (Path.Combine(home, "Downloads", "CrossOver Preview.app"), new Version("27.0.0.40817")),
-            ("/Applications/CrossOver.app", new Version("26.3.0.39832")),
-            (Path.Combine(home, "Applications", "CrossOver.app"), new Version("26.3.0.39832")),
-            (Path.Combine(home, "Downloads", "CrossOver 2.app"), new Version("26.3.0.39832")),
+            Copy("/Applications/CrossOver Preview.app", "27.0.0.40817"),
+            Copy(Path.Combine(home, "Downloads", "CrossOver Preview.app"), "27.0.0.40817"),
+            Copy("/Applications/CrossOver.app", "26.3.0.39832"),
+            Copy(Path.Combine(home, "Applications", "CrossOver.app"), "26.3.0.39832"),
+            Copy(Path.Combine(home, "Downloads", "CrossOver 2.app"), "26.3.0.39832"),
+            // Kept in two different folders that are both called "CrossOver", so naming
+            // the folder does not tell these two apart either.
+            Copy("/Volumes/Backup/CrossOver/CrossOver.app", "26.3.0.39832"),
+            Copy(Path.Combine(home, "Games", "CrossOver", "CrossOver.app"), "26.3.0.39832"),
         };
 
         var labels = CrossOverApp.DescribeAll(apps);
 
-        Assert.Equal(apps.Count, labels.Count);
-        Assert.Equal(labels.Count, labels.Distinct().Count());
-        Assert.All(labels, l => Assert.False(string.IsNullOrWhiteSpace(l)));
+        Assert.Equal(new[]
+        {
+            // Shares a name and version with another copy, so it says where it lives.
+            "CrossOver Preview (27.0.0.40817) in Applications",
+            "CrossOver Preview (27.0.0.40817) in Downloads",
+            "CrossOver (26.3.0.39832) in Applications",
+            "CrossOver (26.3.0.39832) in your Applications folder",
+            // The only "CrossOver 2", so it is left as it is.
+            "CrossOver 2 (26.3.0.39832)",
+            // Still identical once the folder is named, so the full path it is.
+            "/Volumes/Backup/CrossOver/CrossOver.app",
+            Path.Combine(home, "Games", "CrossOver", "CrossOver.app"),
+        }, labels);
     }
+
+    /// <summary>An installed copy as CrossOverApp.Installed reports it.</summary>
+    private static (string Path, Version Version, string VersionText) Copy(string path, string version) =>
+        (path, new Version(version), version);
 
     [Fact]
     public void IsRunning_IsFalseForAQuietBottle()

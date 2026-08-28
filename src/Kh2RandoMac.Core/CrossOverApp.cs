@@ -77,10 +77,19 @@ public static class CrossOverApp
     private static string? BundleVersion(string appPath) =>
         ReadDefault(Path.Combine(appPath, "Contents", "Info.plist"), "CFBundleVersion");
 
-    /// <summary>Every CrossOver installed, newest first, with its version.</summary>
-    public static List<(string Path, Version Version)> Installed() =>
+    /// <summary>
+    /// Every CrossOver installed, newest first, with its version both parsed, for
+    /// comparing against a bottle, and as the bundle writes it, for showing someone: a
+    /// build string that does not parse into a Version still means something to them.
+    /// </summary>
+    public static List<(string Path, Version Version, string VersionText)> Installed() =>
         _discovered.Value
-            .Select(a => (Path: a, Version: Version.TryParse(BundleVersion(a) ?? "", out var v) ? v : new Version(0, 0)))
+            .Select(a =>
+            {
+                var text = BundleVersion(a);
+                var version = Version.TryParse(text ?? "", out var v) ? v : new Version(0, 0);
+                return (Path: a, Version: version, VersionText: text ?? version.ToString());
+            })
             .OrderByDescending(a => a.Version)
             .ThenBy(a => a.Path, StringComparer.Ordinal)
             .ToList();
@@ -93,12 +102,13 @@ public static class CrossOverApp
     /// <summary>
     /// Labels for a menu, disambiguated only where they need to be. Several copies of
     /// the same version, or the same name in different folders, are common once people
-    /// keep old releases around.
+    /// keep old releases around. Versions come from the caller, which already read them
+    /// off disk, so a label depends on nothing but the arguments.
     /// </summary>
-    public static List<string> DescribeAll(IReadOnlyList<(string Path, Version Version)> apps)
+    public static List<string> DescribeAll(IReadOnlyList<(string Path, Version Version, string VersionText)> apps)
     {
         var labels = apps
-            .Select(a => $"{Path.GetFileNameWithoutExtension(a.Path)} ({BundleVersion(a.Path) ?? a.Version.ToString()})")
+            .Select(a => $"{Path.GetFileNameWithoutExtension(a.Path)} ({a.VersionText})")
             .ToList();
         // Add the location to any label that appears more than once, then fall back to
         // the full path if two are somehow still identical. A menu of choices that read
