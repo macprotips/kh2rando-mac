@@ -188,18 +188,15 @@ public partial class MainWindow : Window
                 return;
             }
             var chosenApp = installed[i - 1];
-            Log($"CrossOver: {chosenApp.Path}");
+            Log($"CrossOver: {options[i]}");
 
-            // Opening a bottle with a different copy makes CrossOver redo its setup of
-            // that bottle, which puts its own .NET back over the one the tracker needs.
-            // The cost is a repair, so say so rather than letting it look like a bug.
+            // The only thing a switch costs the user is a few seconds on the next
+            // tracker launch, while the app undoes what CrossOver puts back. Say that
+            // and nothing else; the mechanism is not their problem.
             try
             {
                 if (TrackerService.HasDotNet48(Bottle.Resolve(_config)))
-                {
-                    Log("Note: CrossOver will set the bottle up again for this copy the next time");
-                    Log("it runs. The tracker sorts itself out when you next click it.");
-                }
+                    Log("The tracker will take a few extra seconds the first time you open it after this. Nothing else to do.");
             }
             catch
             {
@@ -215,9 +212,8 @@ public partial class MainWindow : Window
                 if (bottleVersion != null && Version.TryParse(bottleVersion, out var needed)
                     && chosenApp.Version < needed)
                 {
-                    Log($"WARNING: your bottle was last used by CrossOver {bottleVersion}, which is newer");
-                    Log("than the copy you just picked. That copy cannot open it. Switch back to Automatic");
-                    Log("unless you know what you are doing.");
+                    Log($"WARNING: this copy is older than your bottle (last used by {bottleVersion}), so it");
+                    Log("cannot open it. Pick a newer copy, or Automatic.");
                 }
             }
             catch
