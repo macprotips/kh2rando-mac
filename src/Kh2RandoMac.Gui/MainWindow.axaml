@@ -109,7 +109,7 @@
     <!-- Install row: type-anything installs on the left, curated one-click installs on the right -->
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,18">
       <TextBox x:Name="RepoBox" Grid.Column="0"
-               Watermark="GitHub mod (author/repo), or drag files in"
+               Watermark="GitHub mod (author/repo), or drag files in…"
                ToolTip.Tip="A GitHub mod in author/repo form, for example KH2FM-Mods-Num/GoA-ROM-Edition."/>
       <Button x:Name="InstallGitButton" Grid.Column="1" Content="Install from GitHub" Margin="8,0,0,0" Click="OnInstallGit"
               ToolTip.Tip="Downloads and enables the mod named on the left."/>
