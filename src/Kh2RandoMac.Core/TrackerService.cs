@@ -178,7 +178,7 @@ public class TrackerService
             throw new InvalidOperationException(
                 $"{bottle.WhatIsUsingIt()}, then try again. The .NET Framework installer needs the bottle to itself.");
 
-        log("Installing .NET Framework 4.8 into the bottle. One time only, takes a few minutes.");
+        log("Installing .NET Framework 4.8 into the bottle.");
 
         // Wine's built-in mono registers itself as .NET 4.8, which makes the real
         // installer exit early claiming success. Remove it first.
@@ -211,7 +211,7 @@ public class TrackerService
 
         // On Windows 10 the framework ships with the OS, so the installer refuses to
         // run there. Pose as Windows 7 for the install, then switch back.
-        log("Running the installer (the log stays quiet while it works, that is normal)...");
+        log("Running the installer. Up to ten minutes, and only this once. The log stays quiet until it finishes...");
         RunBuiltin(bottle, "winecfg", "-v", "win7");
         try
         {

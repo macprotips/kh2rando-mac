@@ -1091,7 +1091,7 @@ public partial class MainWindow : Window
             var repair = await ConfirmAsync(
                 "Repair the tracker",
                 "The tracker crashed on startup, which usually means the .NET Framework in your " +
-                "Kingdom Hearts bottle is incomplete. Repair reinstalls it, which takes a few " +
+                "Kingdom Hearts bottle is incomplete. Repair reinstalls it, which can take ten " +
                 "minutes. Quit the game and Steam first.",
                 "Repair");
             _trackerRepairArmed = false;
@@ -1150,7 +1150,7 @@ public partial class MainWindow : Window
         var confirmed = await ConfirmAsync(
             "Install the item tracker",
             "This downloads the KH2 item tracker and installs the .NET Framework it needs " +
-            "into your Kingdom Hearts bottle. The .NET step happens once and takes a few " +
+            "into your Kingdom Hearts bottle. The .NET step happens once and can take ten " +
             "minutes. Quit the game and Steam first.",
             "Install");
         if (!confirmed)
@@ -1204,7 +1204,7 @@ public partial class MainWindow : Window
             {
                 _trackerRepairArmed = true;
                 Log("The tracker exited without showing a window; it crashed while starting.");
-                Log("Click Tracker again to run a repair install (a few minutes; quit Steam first).");
+                Log("Click Tracker again to run a repair install (up to ten minutes; quit Steam first).");
                 Log("Details were saved to the app log, now highlighted in Finder.");
                 RevealLogInFinder();
             }

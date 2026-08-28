@@ -211,7 +211,7 @@
               ToolTip.Tip="Opens the KH2 Randomizer seed generator. The first click installs it, which takes a few minutes."/>
       <Button x:Name="TrackerButton" Content="Tracker" Padding="14,8"
               Click="OnTracker"
-              ToolTip.Tip="Opens the KH2 item tracker. The first click installs it, which takes a few minutes. Quit Steam and the game first."/>
+              ToolTip.Tip="Opens the KH2 item tracker. If Setup has not already installed what it needs, the first click does, which can take ten minutes. Quit Steam and the game first."/>
       <Border Classes="divider" Margin="6,4"/>
       <Button x:Name="BuildButton" Content="Build" FontWeight="SemiBold" Padding="18,8"
               Click="OnBuild"

@@ -78,7 +78,7 @@ public class RefinedService
             await GitHubApi.DownloadFile(DesktopRuntimeUrl, installer);
         }
 
-        log("Installing the .NET 8 Desktop Runtime into the bottle (a few minutes)...");
+        log("Installing the .NET 8 Desktop Runtime into the bottle. A few minutes, and only this once. The log stays quiet until it finishes...");
         var exit = RunInstaller(bottle, installer, "/install", "/quiet", "/norestart");
         FileLog.Write($"[refined] desktop runtime installer exit code: {exit}");
         // 0 = success, 3010 = success but Windows wants a reboot (meaningless in a bottle).
