@@ -31,7 +31,7 @@ public class SetupService
         install.Bottle.EnsureDllOverrides(Bottle.RequiredOverrides);
         log($"Bottle DLL overrides set ({string.Join(", ", Bottle.RequiredOverrides)}).");
 
-        await SetUpTrackerIfPossible(install.Bottle, workspace, log);
+        await InstallOptionalRuntimes(install.Bottle, workspace, log);
 
         WarnAboutStaleDocScripts(install.Bottle, log);
 
@@ -39,25 +39,39 @@ public class SetupService
     }
 
     /// <summary>
-    /// Get the item tracker ready while the bottle is already quiet. Its .NET Framework
-    /// is the one slow, bottle-exclusive step in the app, and leaving it until someone
-    /// clicks Tracker means meeting that wall at the worst moment, usually with the game
-    /// open. Setup already demands the bottle to itself, so it costs nothing extra here.
-    /// The tracker is not needed to build or play mods, so failing to set it up is worth
-    /// a warning and nothing more; the Tracker button still installs on demand.
+    /// Install the runtimes the optional features need, while the bottle is already
+    /// quiet. Both are slow, bottle-exclusive installs, and leaving either until first
+    /// use means meeting it at the worst moment: the tracker's when someone clicks
+    /// Tracker, Re:Fined's part way through a Build, usually with the game open in
+    /// both cases. Setup already demands the bottle to itself, so neither adds a
+    /// restriction that was not already in force, and both are idempotent, so
+    /// re-running Setup stays cheap.
     /// </summary>
-    private static async Task SetUpTrackerIfPossible(Bottle bottle, Workspace workspace, Action<string> log)
+    private static async Task InstallOptionalRuntimes(Bottle bottle, Workspace workspace, Action<string> log)
     {
         if (bottle.Platform != WinePlatform.CrossOver)
             return;
+        await TryOptionalStep("the item tracker", log,
+            () => new TrackerService().EnsureInstalled(workspace, bottle, log));
+        await TryOptionalStep("Re:Fined's .NET 8 Desktop Runtime", log,
+            () => new RefinedService().EnsureDesktopRuntime(workspace, bottle, log));
+    }
+
+    /// <summary>
+    /// Run one optional step. Neither runtime is needed to build or play mods, so a
+    /// failure here is worth a warning and nothing more; setup carries on and the
+    /// feature installs on first use exactly as it did before.
+    /// </summary>
+    private static async Task TryOptionalStep(string what, Action<string> log, Func<Task> step)
+    {
         try
         {
-            await new TrackerService().EnsureInstalled(workspace, bottle, log);
+            await step();
         }
         catch (Exception ex)
         {
-            log($"WARNING: could not set up the item tracker ({ex.Message}).");
-            log("Modding is unaffected. Click Tracker when you want it and it will finish then.");
+            log($"WARNING: could not set up {what} ({ex.Message}).");
+            log("Modding is unaffected; it will be set up on first use instead.");
         }
     }
 

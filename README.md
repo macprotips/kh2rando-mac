@@ -120,7 +120,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 - Unofficial. Not affiliated with Square Enix, Disney, CodeWeavers, the OpenKH team,
   or the KH2 Randomizer team. Report issues with this tool here, not to them.
 - This changes your CrossOver bottle so the game can load mods: DLL overrides, and
-  the .NET Framework the item tracker needs. Your bottle is therefore no
+  the .NET runtimes the item tracker and Re:Fined need. Your bottle is therefore no
   longer a stock CrossOver setup. If you hit a CrossOver problem, reproduce it in a
   clean version of CrossOver before asking CodeWeavers for help.
 - No game assets are included or distributed. You need your own copy of the game.

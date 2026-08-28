@@ -90,12 +90,13 @@ public partial class MainWindow : Window
         _config.Save();
         await NoticeAsync("Before you start",
             "This app changes your CrossOver bottle so the game can load mods. It adds a " +
-            "few DLL overrides and installs the .NET Framework the item tracker needs.\n\n" +
+            "few DLL overrides and installs the .NET runtimes the item tracker and " +
+            "Re:Fined need.\n\n" +
             "That means your bottle is no longer a stock CrossOver setup. If you hit a " +
             "CrossOver problem, reproduce it in a clean version of CrossOver before asking " +
             "CodeWeavers for help.\n\n" +
-            "Reset undoes all of that whenever you want, apart from the .NET itself, " +
-            "which is harmless to leave.");
+            "Reset undoes all of that whenever you want, apart from the .NET runtimes, " +
+            "which are harmless to leave.");
     }
 
     /// <summary>A message with a single acknowledging button.</summary>

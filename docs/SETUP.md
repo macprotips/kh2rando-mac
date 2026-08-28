@@ -84,10 +84,12 @@ next.
 2. In KH2 Rando Manager, click Run Setup. It finds your game automatically, installs
    the mod loader into it, and configures the bottle. Watch the messages in the log
    panel at the bottom; it ends with "Setup complete."
-   - It also installs the .NET Framework the item tracker needs into the bottle,
-     which is the slow part and why Setup takes a few minutes. Doing it here means
-     the Tracker button works straight away later, while the bottle is already quiet.
-     If that step fails, modding still works and Tracker installs it on demand.
+   - It also installs two .NET runtimes into the bottle, one for the item tracker
+     and one for Re:Fined. These are the slow part and why Setup takes several
+     minutes. Both need the bottle to itself, which Setup already requires, so doing
+     them here means neither interrupts you later: the Tracker button works straight
+     away, and a Build with Re:Fined enabled never stops to install anything. If
+     either fails, modding still works and it installs on first use instead.
    - If it cannot find the game, it asks you to pick the game folder yourself
      (the folder containing `KINGDOM HEARTS II FINAL MIX.exe`).
    - If you have more than one copy of the game, it asks which to use. The Change

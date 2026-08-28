@@ -95,7 +95,7 @@
              destructive action furthest from everything else. -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
-                  ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and gets the item tracker ready. Takes a few minutes. Quit Steam and the game first."/>
+                  ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and installs the .NET runtimes the item tracker and Re:Fined need. Takes several minutes. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
                   ToolTip.Tip="Unpacks the game's files so mods can be built against them. Takes 10 to 20 minutes and about 30 GB. Run it again after a game update."/>
           <Border Classes="divider"/>
