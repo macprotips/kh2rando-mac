@@ -117,8 +117,13 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 
 ## Notes and disclaimers
 
-- Unofficial. Not affiliated with Square Enix, Disney, the OpenKH team, or the KH2
-  Randomizer team. Report issues with this tool here, not to them.
+- Unofficial. Not affiliated with Square Enix, Disney, CodeWeavers, the OpenKH team,
+  or the KH2 Randomizer team. Report issues with this tool here, not to them.
+- This changes your CrossOver bottle so the game can load mods: DLL overrides, and
+  .NET inside the bottle if you use the item tracker. Your bottle is therefore no
+  longer a stock CrossOver setup. If you hit a CrossOver problem, reproduce it in a
+  clean version of CrossOver before asking CodeWeavers for help. Reset returns the
+  bottle and the game to vanilla.
 - No game assets are included or distributed. You need your own copy of the game.
 - Setup writes three DLL-override entries to the bottle registry. The registry file is
   backed up first (`user.reg.kh2rando.bak`) and setup refuses to run while the bottle
