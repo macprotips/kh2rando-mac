@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- A Change Folder button on the Game row points the app at a different copy of
+  the game, which previously took deleting the config by hand
+- Setup asks which copy to use when it finds more than one, instead of taking
+  the first and mentioning the others in the log
+- A hand-picked folder now works out for itself whether it is a Steam or Epic
+  copy, rather than always being recorded as Steam
 - Build & Run now goes straight into KH2 instead of leaving you on the
   collection's game-select menu, using the mod loader's own quick-launch rather
   than starting the game's exe behind Steam's back

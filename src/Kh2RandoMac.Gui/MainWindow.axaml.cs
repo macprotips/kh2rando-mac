@@ -332,6 +332,7 @@ public partial class MainWindow : Window
             // Everything that reads or writes app state is disabled while an operation
             // runs, a stray click mid-setup or mid-build must not race the worker.
             SetupButton.IsEnabled = !busy;
+            ChangeGameButton.IsEnabled = !busy;
             ExtractButton.IsEnabled = !busy;
             BuildButton.IsEnabled = !busy;
             RunButton.IsEnabled = !busy;
@@ -520,43 +521,81 @@ public partial class MainWindow : Window
     {
         Log("Searching CrossOver bottles and Sikarugir wrappers for KINGDOM HEARTS HD 1.5+2.5 ReMIX...");
         var installs = await Task.Run(GameLocator.FindAll);
-        GameInstall install;
+        GameInstall? install;
         if (installs.Count == 0)
         {
             Log("No install found automatically. If the game is on an external drive, plug it in.");
-            Log("Otherwise, pick the game folder by hand (the one containing 'KINGDOM HEARTS II FINAL MIX.exe').");
-            var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-            {
-                Title = "Select the KINGDOM HEARTS -HD 1.5+2.5 ReMIX- game folder",
-                AllowMultiple = false,
-            });
-            var dir = picked.FirstOrDefault()?.Path.LocalPath;
-            if (dir == null)
-            {
-                Log("Setup cancelled.");
-                return;
-            }
-            if (!GameLocator.IsGameDir(dir))
-                throw new InvalidOperationException($"That folder has no {GameLocator.Kh2ExeName}, wrong folder?");
-            var bottles = Bottle.Discover();
-            var owner = bottles.FirstOrDefault(b => dir.StartsWith(b.Root, StringComparison.Ordinal)) ?? bottles.FirstOrDefault()
-                ?? throw new InvalidOperationException("No CrossOver bottles or Sikarugir wrappers found.");
-            install = new GameInstall(owner, dir, "Steam");
-            Log($"Using bottle '{owner.Name}'.");
+            install = await PickGameFolderAsync();
+        }
+        else if (installs.Count == 1)
+        {
+            install = installs[0];
         }
         else
         {
-            install = installs[0];
-            if (installs.Count > 1)
-                Log($"Found {installs.Count} installs; using the first: {install.GameDirMac}");
+            // Several copies is normal once someone keeps one on an external drive, and
+            // setting up the wrong one looks like the app silently doing nothing.
+            var choice = await ChooseAsync("More than one copy of the game", "Pick the one to set up.",
+                installs.Select(Describe).ToList());
+            install = choice < 0 ? null : installs[choice];
         }
 
+        if (install == null)
+        {
+            Log("Setup cancelled.");
+            return;
+        }
+        await RunSetupFor(install);
+        Log("Setup complete. Next: Extract Game Data (one time, 10-20 min).");
+    });
+
+    private async void OnChangeGameFolder(object? sender, RoutedEventArgs e) =>
+        await RunTask("Change game folder", async () =>
+        {
+            var install = await PickGameFolderAsync();
+            if (install == null)
+            {
+                Log("Left the game folder as it was.");
+                return;
+            }
+            await RunSetupFor(install);
+            Log("Game folder changed. Extract Game Data if this copy has not been extracted yet.");
+        });
+
+    private static string Describe(GameInstall install) =>
+        $"{install.GameDirMac}\n{install.Launcher}, bottle '{install.Bottle.Name}'";
+
+    /// <summary>
+    /// Ask for the game folder by hand and work out which bottle and store it belongs
+    /// to. Returns null when the user backs out of the picker.
+    /// </summary>
+    private async Task<GameInstall?> PickGameFolderAsync()
+    {
+        Log($"Pick the folder containing '{GameLocator.Kh2ExeName}'.");
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select the KINGDOM HEARTS -HD 1.5+2.5 ReMIX- game folder",
+            AllowMultiple = false,
+        });
+        var dir = picked.FirstOrDefault()?.Path.LocalPath;
+        if (dir == null)
+            return null;
+        var install = await Task.Run(() => GameLocator.ForFolder(dir, _config.BottleName, _config.Launcher));
+        Log($"Using bottle '{install.Bottle.Name}' ({install.Launcher}).");
+        return install;
+    }
+
+    /// <summary>
+    /// Record an install and put the mod loader in it. Setup and Change Folder are the
+    /// same operation once the folder is known, so they share this.
+    /// </summary>
+    private async Task RunSetupFor(GameInstall install)
+    {
         // Work on a local config object; the shared field is refreshed afterwards.
         var config = AppConfig.Load();
         config.WorkspaceRoot = _config.WorkspaceRoot;
         await Task.Run(() => new SetupService().Run(config, install, Log));
-        Log("Setup complete. Next: Extract Game Data (one time, 10-20 min).");
-    });
+    }
 
     private async void OnExtract(object? sender, RoutedEventArgs e) => await RunTask("Extract game data", async () =>
     {
@@ -713,6 +752,56 @@ public partial class MainWindow : Window
         };
         await dialog.ShowDialog(this);
         return result;
+    }
+
+    /// <summary>
+    /// Ask which of several items to use. Returns the chosen index, or -1 if cancelled.
+    /// </summary>
+    private async Task<int> ChooseAsync(string title, string message, IReadOnlyList<string> options)
+    {
+        var chosen = -1;
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 540,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        // As with ConfirmAsync, no title bar is drawn, so the title has to be content.
+        var heading = new TextBlock
+        {
+            Text = title,
+            FontSize = 15,
+            FontWeight = Avalonia.Media.FontWeight.SemiBold,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
+        var text = new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+        var list = new ListBox { ItemsSource = options, SelectedIndex = 0, MaxHeight = 240 };
+        var cancel = new Button { Content = "Cancel" };
+        var ok = new Button { Content = "Use This One", FontWeight = Avalonia.Media.FontWeight.SemiBold };
+        cancel.Click += (_, _) => dialog.Close();
+        ok.Click += (_, _) => { chosen = list.SelectedIndex; dialog.Close(); };
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 14,
+            Children =
+            {
+                heading,
+                text,
+                list,
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 8,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Children = { cancel, ok },
+                },
+            },
+        };
+        await dialog.ShowDialog(this);
+        return chosen;
     }
 
     private async void OnToggleHud(object? sender, RoutedEventArgs e)

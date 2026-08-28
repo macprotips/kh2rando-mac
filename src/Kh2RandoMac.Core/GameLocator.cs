@@ -35,6 +35,43 @@ public static class GameLocator
         return results.DistinctBy(g => g.GameDirMac).ToList();
     }
 
+    /// <summary>
+    /// Build an install record for a folder the user pointed at by hand. A detected
+    /// install at the same path wins, since it already knows its bottle and store.
+    /// Failing that the store is read off the layout the same way FindAll reads it,
+    /// and anything unrecognised keeps whatever the user is already set up with
+    /// rather than guessing at it.
+    /// </summary>
+    public static GameInstall ForFolder(string gameDirMac, string? preferredBottle, string fallbackLauncher)
+    {
+        if (!IsGameDir(gameDirMac))
+            throw new InvalidOperationException($"That folder has no {Kh2ExeName}, wrong folder?");
+
+        var full = Path.GetFullPath(gameDirMac);
+        var detected = FindAll().FirstOrDefault(i =>
+            string.Equals(Path.GetFullPath(i.GameDirMac), full, StringComparison.Ordinal));
+        if (detected != null)
+            return detected;
+
+        var bottles = Bottle.Discover();
+        if (bottles.Count == 0)
+            throw new InvalidOperationException("No CrossOver bottles or Sikarugir wrappers found.");
+        var bottle = bottles.FirstOrDefault(b => b.Name == preferredBottle)
+            ?? bottles.FirstOrDefault(b => full.StartsWith(b.Root + "/", StringComparison.Ordinal))
+            ?? bottles[0];
+        return new GameInstall(bottle, full, InferLauncher(full, fallbackLauncher));
+    }
+
+    /// <summary>Which store a folder came from, judged by where it sits. Steam keeps the
+    /// game under a steamapps library; the Epic installer makes a KH_1.5_2.5 folder.</summary>
+    public static string InferLauncher(string gameDirMac, string fallback)
+    {
+        if (gameDirMac.Contains("/steamapps/", StringComparison.OrdinalIgnoreCase))
+            return "Steam";
+        return string.Equals(Path.GetFileName(gameDirMac.TrimEnd('/')), "KH_1.5_2.5",
+            StringComparison.OrdinalIgnoreCase) ? "EGS" : fallback;
+    }
+
     public static bool IsGameDir(string dir) =>
         Directory.Exists(dir) && File.Exists(Path.Combine(dir, Kh2ExeName));
 

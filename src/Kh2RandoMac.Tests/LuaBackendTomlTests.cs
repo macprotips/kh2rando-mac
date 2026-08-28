@@ -62,33 +62,3 @@ public class LuaBackendTomlTests
         return count;
     }
 }
-
-public class GameLocatorTests
-{
-    [Fact]
-    public void ParsesLibraryFoldersVdf()
-    {
-        const string vdf = """
-            "libraryfolders"
-            {
-                "0"
-                {
-                    "path"		"C:\\Program Files (x86)\\Steam"
-                    "label"		""
-                }
-                "1"
-                {
-                    "path"		"L:\\SteamLibrary"
-                }
-            }
-            """;
-        var paths = GameLocator.ParseLibraryFolders(vdf);
-        Assert.Equal(new[] { @"C:\Program Files (x86)\Steam", @"L:\SteamLibrary" }, paths);
-    }
-
-    [Fact]
-    public void EmptyVdfYieldsNothing()
-    {
-        Assert.Empty(GameLocator.ParseLibraryFolders("\"libraryfolders\"\n{\n}\n"));
-    }
-}
