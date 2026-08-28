@@ -32,7 +32,10 @@ public static class GameLocator
                 }
             }
         }
-        return results.DistinctBy(g => g.GameDirMac).ToList();
+        // Keyed on the bottle as well as the path: one game folder on an external drive
+        // is commonly visible from several bottles, and collapsing those to one entry
+        // silently decides which bottle to mod rather than letting the user say.
+        return results.DistinctBy(g => (g.Bottle.Name, g.GameDirMac)).ToList();
     }
 
     /// <summary>

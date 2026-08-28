@@ -79,6 +79,14 @@
                        VerticalAlignment="Top" Margin="0,1,0,0"/>
             <TextBlock Grid.Column="2" x:Name="DataStatusText" FontSize="13" TextWrapping="Wrap"/>
           </Grid>
+          <!-- Only shown when the machine has more than one bottle. Switching is a real
+               operation, not a preference: a bottle carries its own mod loader. -->
+          <Grid x:Name="BottleRow" ColumnDefinitions="30,96,*" IsVisible="False">
+            <TextBlock Grid.Column="1" Text="Bottle" FontSize="13" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="2" x:Name="BottlePicker" FontSize="12"
+                      ToolTip.Tip="Which CrossOver bottle the game is modded in. Changing this sets the mod loader up in that bottle, which takes a few minutes."/>
+          </Grid>
           <!-- Only shown when more than one CrossOver is installed; they share bottles,
                and a bottle can only be run by a copy its own age or newer. -->
           <!-- First column is fixed to the badge width (20 plus its 10 margin) so this

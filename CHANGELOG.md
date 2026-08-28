@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- A Bottle picker in the status header, shown when the machine has more than one.
+  Switching sets the mod loader and runtimes up in the chosen bottle; the old one
+  is left alone, so switching back is immediate
+- Setup no longer collapses one game folder seen from several bottles into a
+  single choice. A game on an external drive is commonly visible from all of
+  them, and picking one silently decided which bottle got modded
 - A progress strip above the log shows what Setup is doing and how far along it
   is. Downloads report real percentages; steps that cannot say, such as installers
   running inside the bottle, show an indeterminate bar rather than a made-up

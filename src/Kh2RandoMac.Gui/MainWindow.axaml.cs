@@ -81,6 +81,7 @@ public partial class MainWindow : Window
             await InstallFilesAsync(paths);
         });
 
+        SetUpBottlePicker();
         SetUpCrossOverPicker();
         _ = RefreshAllAsync();
 
@@ -148,6 +149,72 @@ public partial class MainWindow : Window
             },
         };
         await dialog.ShowDialog(this);
+    }
+
+    /// <summary>
+    /// Which bottle the game is modded in. Only appears when the machine has more than
+    /// one, because with a single bottle there is no choice to present. Switching is not
+    /// a preference: a bottle carries its own mod loader, registry overrides and
+    /// runtimes, so the new one has to be set up before it can run anything.
+    /// </summary>
+    private void SetUpBottlePicker()
+    {
+        var bottles = Bottle.Discover();
+        if (bottles.Count < 2)
+            return;
+
+        BottlePicker.ItemsSource = bottles.Select(b => b.Name).ToList();
+        // Selected before subscribing, so populating the list cannot look like a switch.
+        // Left blank when the configured bottle is not among them, which happens when
+        // one is deleted in CrossOver: naming some other bottle would be a claim that
+        // the game is set up there.
+        BottlePicker.SelectedIndex = bottles.FindIndex(b => b.Name == _config.BottleName);
+        BottleRow.IsVisible = true;
+
+        BottlePicker.SelectionChanged += async (_, _) =>
+        {
+            if (_switchingBottle)
+                return;
+            var i = BottlePicker.SelectedIndex;
+            if (i < 0 || bottles[i].Name == _config.BottleName)
+                return;
+            var target = bottles[i];
+
+            if (_config.GameDir == null || !GameLocator.IsGameDir(_config.GameDir))
+            {
+                await NoticeAsync("No game folder yet",
+                    "Run Setup first, so the app knows which copy of the game to install into.");
+                RevertBottleSelection(bottles);
+                return;
+            }
+
+            var go = await ConfirmAsync($"Use bottle '{target.Name}'",
+                $"'{target.Name}' gets its own mod loader and the runtimes the tracker and " +
+                "Re:Fined need, which takes a few minutes. Quit the game and Steam first.\n\n" +
+                $"'{_config.BottleName}' is left as it is; you can switch back at any time.",
+                "Set Up");
+            if (!go)
+            {
+                RevertBottleSelection(bottles);
+                return;
+            }
+
+            await RunTask($"Switch to bottle '{target.Name}'", () =>
+                RunSetupFor(new GameInstall(target, _config.GameDir!, _config.Launcher)));
+            RevertBottleSelection(bottles);
+        };
+    }
+
+    /// <summary>
+    /// Put the menu back on whatever the config actually says. Used after a cancel and
+    /// after a switch alike: the config is the truth, and a switch that failed must not
+    /// leave the menu naming a bottle that was never set up.
+    /// </summary>
+    private void RevertBottleSelection(List<Bottle> bottles)
+    {
+        _switchingBottle = true;
+        BottlePicker.SelectedIndex = bottles.FindIndex(b => b.Name == _config.BottleName);
+        _switchingBottle = false;
     }
 
     /// <summary>
@@ -914,6 +981,7 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool _switchingBottle;
     private bool _trackerLaunching;
     private bool _trackerRepairArmed;
 
