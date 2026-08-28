@@ -171,6 +171,9 @@ and [LibGit2Sharp](https://github.com/libgit2/libgit2sharp) (MIT), on .NET. Mods
 under [CrossOver](https://www.codeweavers.com/crossover) by CodeWeavers, and through
 it Wine, without which none of this would work on a Mac.
 
+Thanks to Noah F. for testing on a second Mac and reporting the problems that led
+to the texture and tracker fixes.
+
 Mods installed through this tool remain the work and property of their authors.
 
 License: Apache-2.0 (see [LICENSE](LICENSE) and [NOTICE](NOTICE)).
