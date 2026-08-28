@@ -137,4 +137,15 @@ public class BottleTests
         Assert.Equal(labels.Count, labels.Distinct().Count());
         Assert.All(labels, l => Assert.False(string.IsNullOrWhiteSpace(l)));
     }
+
+    [Fact]
+    public void IsRunning_IsFalseForAQuietBottle()
+    {
+        // The socket wineserver keeps is absent, so the bottle is idle. This used to
+        // fall through to a scan that reported any bottle as running whenever any wine
+        // process existed anywhere, which CrossOver leaves behind after Steam quits,
+        // and no amount of quitting would clear it.
+        using var fake = new FakeBottle();
+        Assert.False(fake.Bottle.IsRunning());
+    }
 }

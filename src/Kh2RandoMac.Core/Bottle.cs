@@ -212,9 +212,12 @@ public class Bottle
             p.WaitForExit(3000);
             if (parts.Length == 2 && long.TryParse(parts[0], out var dev) && long.TryParse(parts[1], out var ino))
             {
-                var socket = $"/tmp/.wine-{GetUid()}/server-{dev:x}-{ino:x}/socket";
-                if (File.Exists(socket))
-                    return true;
+                // wineserver keeps this socket for exactly as long as the bottle runs,
+                // and it is keyed by the prefix's own inode, so it answers for this
+                // bottle rather than any bottle. When stat worked, trust it: falling
+                // through to a process scan on a quiet bottle is what produced
+                // "appears to be running" that no amount of quitting would clear.
+                return File.Exists($"/tmp/.wine-{GetUid()}/server-{dev:x}-{ino:x}/socket");
             }
         }
         catch
@@ -222,15 +225,22 @@ public class Bottle
             // Fall through to the process scan.
         }
 
-        // Fallback heuristic: any wine process whose command line mentions this bottle.
+        // Only reached when the socket could not be checked at all. Match a single
+        // process that names this bottle, rather than looking for a path and a wine
+        // process anywhere in the list: that reported every bottle as running as soon
+        // as any wine process was alive, and CrossOver leaves those behind for a while
+        // after Steam quits.
         try
         {
             var psi = new ProcessStartInfo("/bin/ps", "-axo command") { RedirectStandardOutput = true };
             using var p = Process.Start(psi)!;
             var output = p.StandardOutput.ReadToEnd();
             p.WaitForExit();
-            return output.Contains(Root) &&
-                (output.Contains("wineserver") || output.Contains("wineloader") || output.Contains("wine64"));
+            return output.Split('\n').Any(line =>
+                (line.Contains(Root, StringComparison.Ordinal) ||
+                 line.Contains($"--bottle {Name}", StringComparison.Ordinal)) &&
+                (line.Contains("wine", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains(".exe", StringComparison.OrdinalIgnoreCase)));
         }
         catch
         {
