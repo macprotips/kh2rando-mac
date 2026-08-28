@@ -840,10 +840,10 @@ public partial class MainWindow : Window
 
         if (bottle.IsRunning())
         {
-            await NoticeAsync("Quit Steam first",
-                "Installing the tracker's .NET needs the bottle to itself, and Steam or the " +
-                "game is still running. Quit both inside CrossOver, then click Tracker again.");
-            Log("Quit Steam and the game in CrossOver, then click Tracker again.");
+            await NoticeAsync("Something is using the bottle",
+                "Installing the tracker's .NET needs the bottle to itself.\n\n" +
+                $"{bottle.WhatIsUsingIt()}, then click Tracker again.");
+            Log($"{bottle.WhatIsUsingIt()}, then click Tracker again.");
             return;
         }
 
@@ -1194,12 +1194,11 @@ public partial class MainWindow : Window
         // reads as the button having done nothing, and people simply click again.
         if (bottle.IsRunning())
         {
-            await NoticeAsync("Quit Steam first",
+            await NoticeAsync("Something is using the bottle",
                 "Re:Fined needs the .NET 8 Desktop Runtime installed into your Kingdom Hearts " +
                 "bottle, and that needs the bottle to itself.\n\n" +
-                "Steam or the game is still running. Quit both inside CrossOver, then click " +
-                "Build again.");
-            Log("Build stopped: quit Steam and the game in CrossOver, then click Build again.");
+                $"{bottle.WhatIsUsingIt()}, then click Build again.");
+            Log($"Build stopped. {bottle.WhatIsUsingIt()}, then click Build again.");
             return false;
         }
 

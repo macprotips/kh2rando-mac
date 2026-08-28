@@ -176,8 +176,7 @@ public class TrackerService
 
         if (bottle.IsRunning())
             throw new InvalidOperationException(
-                $"Bottle '{bottle.Name}' appears to be running. Quit the game and Steam in CrossOver " +
-                "first, then try again; the .NET Framework installer needs the bottle to itself.");
+                $"{bottle.WhatIsUsingIt()}, then try again. The .NET Framework installer needs the bottle to itself.");
 
         log("Installing .NET Framework 4.8 into the bottle. One time only, takes a few minutes.");
 

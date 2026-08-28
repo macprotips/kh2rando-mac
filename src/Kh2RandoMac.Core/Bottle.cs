@@ -191,6 +191,16 @@ public class Bottle
         return rest.Length == 0 ? root : $"{root}/{rest}";
     }
 
+    /// <summary>
+    /// What to quit, for a message. The tracker runs inside the bottle and this app
+    /// starts it, so it is the thing most likely to be holding a bottle open while the
+    /// user is certain they quit everything: name it rather than listing Steam again.
+    /// </summary>
+    public string WhatIsUsingIt() =>
+        TrackerService.IsTrackerRunning()
+            ? "The item tracker is open, and it runs inside the bottle. Close it (and Steam and the game, if they are running)"
+            : "Quit the game and Steam in CrossOver";
+
     public bool IsRunning()
     {
         // Wine's server keeps a unix socket at /tmp/.wine-{uid}/server-{dev:x}-{ino:x}/socket,
@@ -359,8 +369,7 @@ public class Bottle
 
         if (IsRunning())
             throw new InvalidOperationException(
-                $"Bottle '{Name}' appears to be running. Quit all its programs (and Steam) first, " +
-                "then run this again, otherwise Wine would overwrite the registry change.");
+                $"{WhatIsUsingIt()}, then try again. Wine would otherwise overwrite the change.");
 
         var lines = File.Exists(UserReg)
             ? File.ReadAllLines(UserReg).ToList()
@@ -443,8 +452,7 @@ public class Bottle
 
         if (IsRunning())
             throw new InvalidOperationException(
-                $"Bottle '{Name}' appears to be running. Quit all its programs (and Steam) first, " +
-                "then run this again.");
+                $"{WhatIsUsingIt()}, then try again.");
 
         var kept = Enumerable.Range(0, lines.Count)
             .Where(i => !IsWantedOverrideLine(i))

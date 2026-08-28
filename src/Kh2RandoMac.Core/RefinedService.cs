@@ -69,8 +69,7 @@ public class RefinedService
             return;
         if (bottle.IsRunning())
             throw new InvalidOperationException(
-                $"Bottle '{bottle.Name}' appears to be running. Quit the game and Steam in CrossOver " +
-                "first, then try again; the runtime installer needs the bottle to itself.");
+                $"{bottle.WhatIsUsingIt()}, then try again. The runtime installer needs the bottle to itself.");
 
         var installer = Path.Combine(workspace.Root, "runtimes", "windowsdesktop-runtime-8-x64.exe");
         if (!File.Exists(installer))
