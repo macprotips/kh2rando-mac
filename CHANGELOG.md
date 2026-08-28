@@ -6,7 +6,11 @@
   Switching sets the mod loader and runtimes up in the chosen bottle as part of the
   switch, so there is no second step. When the bottle being left has already been
   set up, the confirmation says so and points out that Reset only ever acts on the
-  bottle in use, so returning the old one to stock has to happen before switching
+  bottle in use, so returning the old one to stock has to happen before switching.
+  Bottles are re-read on every refresh, so one made or deleted in CrossOver while
+  the app is open appears or goes away without a restart. Switching refuses up
+  front if something is using the target bottle, and says so if that bottle does
+  not have the game in its library and therefore could not launch it
 - Setup no longer collapses one game folder seen from several bottles into a
   single choice. A game on an external drive is commonly visible from all of
   them, and picking one silently decided which bottle got modded

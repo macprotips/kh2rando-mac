@@ -159,79 +159,133 @@ public partial class MainWindow : Window
     /// </summary>
     private void SetUpBottlePicker()
     {
-        var bottles = Bottle.Discover();
-        if (bottles.Count < 2)
-            return;
-
-        BottlePicker.ItemsSource = bottles.Select(b => b.Name).ToList();
-        // Selected before subscribing, so populating the list cannot look like a switch.
-        // Left blank when the configured bottle is not among them, which happens when
-        // one is deleted in CrossOver: naming some other bottle would be a claim that
-        // the game is set up there.
-        BottlePicker.SelectedIndex = bottles.FindIndex(b => b.Name == _config.BottleName);
-        BottleRow.IsVisible = true;
-
-        BottlePicker.SelectionChanged += async (_, _) =>
-        {
-            if (_switchingBottle)
-                return;
-            var i = BottlePicker.SelectedIndex;
-            if (i < 0 || bottles[i].Name == _config.BottleName)
-                return;
-            var target = bottles[i];
-
-            if (_config.GameDir == null || !GameLocator.IsGameDir(_config.GameDir))
-            {
-                await NoticeAsync("No game folder yet",
-                    "Run Setup first, so the app knows which copy of the game to install into.");
-                RevertBottleSelection(bottles);
-                return;
-            }
-
-            var leaving = _config.BottleName;
-            var leavingWasSetUp = false;
-            try
-            {
-                leavingWasSetUp = leaving != null && SetupService.HasBeenSetUp(Bottle.Resolve(_config));
-            }
-            catch
-            {
-                // Current bottle is gone or unreadable, so there is nothing left behind
-                // worth warning about.
-            }
-
-            var message =
-                $"'{target.Name}' needs the mod loader, the DLL overrides and the runtimes " +
-                "the tracker and Re:Fined use. That is a few minutes, and it runs now. " +
-                "Quit the game and Steam first.";
-            if (leavingWasSetUp)
-                message += $"\n\n'{leaving}' keeps the changes this app made to it. Reset only " +
-                    $"ever acts on the bottle in use, so if you want '{leaving}' back to stock, " +
-                    "cancel and run Reset first.";
-
-            var go = await ConfirmAsync($"Use bottle '{target.Name}'", message, "Set Up");
-            if (!go)
-            {
-                RevertBottleSelection(bottles);
-                return;
-            }
-
-            await RunTask($"Switch to bottle '{target.Name}'", () =>
-                RunSetupFor(new GameInstall(target, _config.GameDir!, _config.Launcher)));
-            RevertBottleSelection(bottles);
-        };
+        BottlePicker.SelectionChanged += OnBottleSelected;
+        RefreshBottlePicker();
     }
 
     /// <summary>
-    /// Put the menu back on whatever the config actually says. Used after a cancel and
-    /// after a switch alike: the config is the truth, and a switch that failed must not
-    /// leave the menu naming a bottle that was never set up.
+    /// Re-read the bottles on disk and repaint the menu. Run on every refresh rather
+    /// than once at startup: people make and delete bottles in CrossOver while this is
+    /// open, and a menu built at launch would offer bottles that no longer exist and
+    /// hide the one they just made.
     /// </summary>
-    private void RevertBottleSelection(List<Bottle> bottles)
+    private void RefreshBottlePicker()
+    {
+        List<Bottle> found;
+        try
+        {
+            found = Bottle.Discover();
+        }
+        catch
+        {
+            return; // Unreadable bottles directory; leave whatever is on screen.
+        }
+
+        var names = found.Select(b => b.Name).ToList();
+        var unchanged = names.SequenceEqual(_bottles.Select(b => b.Name));
+        _bottles = found;
+        BottleRow.IsVisible = found.Count > 1;
+        if (unchanged && BottlePicker.ItemsSource != null)
+        {
+            SelectConfiguredBottle();
+            return;
+        }
+
+        _switchingBottle = true;
+        BottlePicker.ItemsSource = names;
+        _switchingBottle = false;
+        SelectConfiguredBottle();
+    }
+
+    /// <summary>
+    /// Point the menu at whatever the config actually says, without that looking like a
+    /// switch. Left blank when the configured bottle is not on the machine, which
+    /// happens after deleting one in CrossOver: naming another would be a claim that
+    /// the game is set up there.
+    /// </summary>
+    private void SelectConfiguredBottle()
     {
         _switchingBottle = true;
-        BottlePicker.SelectedIndex = bottles.FindIndex(b => b.Name == _config.BottleName);
+        BottlePicker.SelectedIndex = _bottles.FindIndex(b => b.Name == _config.BottleName);
         _switchingBottle = false;
+    }
+
+    private async void OnBottleSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_switchingBottle || _busy)
+            return;
+        var i = BottlePicker.SelectedIndex;
+        if (i < 0 || i >= _bottles.Count || _bottles[i].Name == _config.BottleName)
+            return;
+        var target = _bottles[i];
+
+        if (_config.GameDir == null || !GameLocator.IsGameDir(_config.GameDir))
+        {
+            await NoticeAsync("No game folder yet",
+                "Run Setup first, so the app knows which copy of the game to install into.");
+            SelectConfiguredBottle();
+            return;
+        }
+
+        // Check before asking, as everywhere else: a refusal after the dialog reads as
+        // the button having done nothing.
+        if (target.IsRunning())
+        {
+            await NoticeAsync("Something is using that bottle",
+                $"Setting '{target.Name}' up needs it to itself.\n\n" +
+                $"{target.WhatIsUsingIt()}, then choose it again.");
+            SelectConfiguredBottle();
+            return;
+        }
+
+        var leavingWasSetUp = false;
+        try
+        {
+            leavingWasSetUp = _config.BottleName != null
+                && SetupService.HasBeenSetUp(Bottle.Resolve(_config));
+        }
+        catch
+        {
+            // Current bottle gone or unreadable: nothing left behind to warn about.
+        }
+
+        // Setting the loader up in a bottle that cannot reach the game leaves someone
+        // configured to a bottle that will not launch, with nothing on screen saying so.
+        var reachable = await Task.Run(() =>
+        {
+            try
+            {
+                var full = Path.GetFullPath(_config.GameDir!);
+                return GameLocator.FindAll().Any(g => g.Bottle.Name == target.Name
+                    && Path.GetFullPath(g.GameDirMac) == full);
+            }
+            catch
+            {
+                return true; // Cannot tell; do not invent a warning.
+            }
+        });
+
+        var message =
+            $"'{target.Name}' needs the mod loader, the DLL overrides and the runtimes " +
+            "the tracker and Re:Fined use. That is a few minutes, and it runs now. " +
+            "Quit the game and Steam first.";
+        if (!reachable)
+            message += $"\n\nNote that '{target.Name}' does not have this copy of the game in " +
+                "its library, so it will not be able to launch it until you add it there.";
+        if (leavingWasSetUp)
+            message += $"\n\n'{_config.BottleName}' keeps the changes this app made to it. Reset " +
+                $"only ever acts on the bottle in use, so if you want '{_config.BottleName}' back " +
+                "to stock, cancel and run Reset first.";
+
+        if (!await ConfirmAsync($"Use bottle '{target.Name}'", message, "Set Up"))
+        {
+            SelectConfiguredBottle();
+            return;
+        }
+
+        await RunTask($"Switch to bottle '{target.Name}'", () =>
+            RunSetupFor(new GameInstall(target, _config.GameDir!, _config.Launcher)));
+        SelectConfiguredBottle();
     }
 
     /// <summary>
@@ -469,6 +523,10 @@ public partial class MainWindow : Window
             // runs, a stray click mid-setup or mid-build must not race the worker.
             SetupButton.IsEnabled = !busy;
             ChangeGameButton.IsEnabled = !busy;
+            // Both pickers start real work, so they belong with the buttons rather than
+            // staying live for a click that would only be refused.
+            BottlePicker.IsEnabled = !busy;
+            CrossOverPicker.IsEnabled = !busy;
             ExtractButton.IsEnabled = !busy;
             BuildButton.IsEnabled = !busy;
             RunButton.IsEnabled = !busy;
@@ -600,6 +658,7 @@ public partial class MainWindow : Window
         PaintStatusRow(GameStatusBadge, GameStatusIcon, GameStatusText, status.Game);
         PaintStatusRow(LoaderStatusBadge, LoaderStatusIcon, LoaderStatusText, status.Loader);
         PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
+        RefreshBottlePicker();
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
@@ -999,6 +1058,7 @@ public partial class MainWindow : Window
     }
 
     private bool _switchingBottle;
+    private List<Bottle> _bottles = new();
     private bool _trackerLaunching;
     private bool _trackerRepairArmed;
 
