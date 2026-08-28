@@ -838,6 +838,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (bottle.IsRunning())
+        {
+            await NoticeAsync("Quit Steam first",
+                "Installing the tracker's .NET needs the bottle to itself, and Steam or the " +
+                "game is still running. Quit both inside CrossOver, then click Tracker again.");
+            Log("Quit Steam and the game in CrossOver, then click Tracker again.");
+            return;
+        }
+
         var confirmed = await ConfirmAsync(
             "Install the item tracker",
             "This downloads the KH2 item tracker and installs the .NET Framework it needs " +
@@ -1180,6 +1189,19 @@ public partial class MainWindow : Window
         }
         if (bottle.Platform != WinePlatform.CrossOver || RefinedService.HasDesktopRuntime(bottle))
             return true;
+
+        // Check before asking, not after. Told afterwards, in the log, the refusal
+        // reads as the button having done nothing, and people simply click again.
+        if (bottle.IsRunning())
+        {
+            await NoticeAsync("Quit Steam first",
+                "Re:Fined needs the .NET 8 Desktop Runtime installed into your Kingdom Hearts " +
+                "bottle, and that needs the bottle to itself.\n\n" +
+                "Steam or the game is still running. Quit both inside CrossOver, then click " +
+                "Build again.");
+            Log("Build stopped: quit Steam and the game in CrossOver, then click Build again.");
+            return false;
+        }
 
         var confirmed = await ConfirmAsync(
             "Install the .NET 8 Desktop Runtime",
