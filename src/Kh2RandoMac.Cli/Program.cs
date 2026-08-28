@@ -342,9 +342,9 @@ static async Task<int> Tracker()
         Say("One-time fix applied: bottle pinned to the real .NET Framework.");
     }
     var proc = TrackerService.Launch(workspace, bottle);
-    Say("Tracker starting...");
-    if (await TrackerService.WaitUntilVisible(proc, TimeSpan.FromSeconds(60)))
-        Say("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+    Say("Starting the tracker. Its window can take up to a minute to appear.");
+    if (await TrackerService.WaitUntilRunning(proc, TimeSpan.FromSeconds(60)))
+        Say("Tracker started. Turn on auto-tracking from its Options menu once the game is running.");
     else if (proc.HasExited)
     {
         Say("The tracker exited without showing a window; it crashed while starting.");

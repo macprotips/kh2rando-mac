@@ -331,10 +331,12 @@ public class TrackerService
     }
 
     /// <summary>
-    /// True once the tracker has a window on screen: launching takes Wine a while, and
-    /// the process only checks in with macOS as a GUI app when its window appears.
+    /// Whether the tracker has registered with macOS as a running app. This happens
+    /// early in startup, well before WPF draws anything, so it means "started", not
+    /// "on screen". macOS exposes no window state for it, and the alternative is
+    /// CoreGraphics interop that is not worth the risk in a shipping app.
     /// </summary>
-    public static bool IsTrackerVisible()
+    public static bool IsTrackerRunning()
     {
         try
         {
@@ -360,22 +362,33 @@ public class TrackerService
     /// success for a tracker that never drew anything: give up the moment the process
     /// exits rather than believing the registration.
     /// </summary>
-    public static async Task<bool> WaitUntilVisible(Process process, TimeSpan timeout)
+    /// <summary>
+    /// Wait until the tracker is up, or give up when it dies. Registration comes long
+    /// before the window, and a failing WPF app registers too, so keep watching for a
+    /// while afterwards: a crash on startup lands within a few seconds of it.
+    /// </summary>
+    public static async Task<bool> WaitUntilRunning(Process process, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
+        var settle = TimeSpan.FromSeconds(10);
         while (DateTime.UtcNow < deadline)
         {
             if (process.HasExited)
                 return false;
-            if (IsTrackerVisible())
+            if (IsTrackerRunning())
             {
-                // Registered: give it a moment and make sure it is still alive.
-                await Task.Delay(1500);
-                return !process.HasExited;
+                var settled = DateTime.UtcNow + settle;
+                while (DateTime.UtcNow < settled)
+                {
+                    if (process.HasExited)
+                        return false;
+                    await Task.Delay(500);
+                }
+                return true;
             }
             await Task.Delay(1000);
         }
-        return !process.HasExited && IsTrackerVisible();
+        return !process.HasExited;
     }
 
     /// <summary>Run a builtin in the bottle, recording what it said for field logs.</summary>

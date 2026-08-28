@@ -888,9 +888,12 @@ public partial class MainWindow : Window
         try
         {
             var proc = TrackerService.Launch(_workspace, bottle);
-            Log("Launching the tracker...");
-            if (await TrackerService.WaitUntilVisible(proc, TimeSpan.FromSeconds(60)))
-                Log("Tracker is up. In its Options menu, auto-tracking connects once the game is running.");
+            Log("Starting the tracker. Its window can take up to a minute to appear.");
+            if (await TrackerService.WaitUntilRunning(proc, TimeSpan.FromSeconds(60)))
+            {
+                Log("Tracker started. If its window is not up yet, give it a moment. Turn on");
+                Log("auto-tracking from its Options menu once the game is running.");
+            }
             else if (proc.HasExited)
             {
                 _trackerRepairArmed = true;
