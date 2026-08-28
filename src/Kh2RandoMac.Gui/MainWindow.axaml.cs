@@ -176,7 +176,10 @@ public partial class MainWindow : Window
         var names = found.Select(b => b.Name).ToList();
         var unchanged = names.SequenceEqual(_bottles.Select(b => b.Name));
         _bottles = found;
-        BottleRow.IsVisible = found.Count > 1;
+        // Always shown once there is a bottle at all, even when there is only one to
+        // name. A row that appears only when a second bottle exists cannot be found by
+        // anyone looking for how to change bottles, which is exactly when they look.
+        BottleRow.IsVisible = found.Count > 0;
         if (unchanged && BottlePicker.ItemsSource != null)
         {
             SelectConfiguredBottle();
