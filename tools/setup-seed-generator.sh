@@ -74,9 +74,13 @@ cp "$SCRIPT_DIR/seedgen/pyi_rth_maccwd.py" "$DEST/"
 # App icon from the generator's own icon asset.
 (
   cd "$DEST"
+  # macOS wants a 1x and a 2x image per slot, and only accepts these exact names;
+  # anything else (a 64x64, say) is silently dropped. Without the 2x images the
+  # system upscales at render time and the icon looks soft beside other apps.
   rm -rf macicon.iconset && mkdir -p macicon.iconset
-  for s in 16 32 64 128 256 512; do
-    sips -z $s $s Module/icon.png --out "macicon.iconset/icon_${s}x${s}.png" >/dev/null
+  for s in 16 32 128 256 512; do
+    sips -z "$s" "$s" Module/icon.png --out "macicon.iconset/icon_${s}x${s}.png" >/dev/null
+    sips -z "$((s * 2))" "$((s * 2))" Module/icon.png --out "macicon.iconset/icon_${s}x${s}@2x.png" >/dev/null
   done
   iconutil -c icns macicon.iconset -o macicon.icns
   .venv/bin/pyinstaller --noconfirm "KH2 Randomizer macOS.spec" >/dev/null
