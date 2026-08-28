@@ -7,8 +7,23 @@ Contributors, licensed under the Apache License 2.0. OpenKH is consumed as a
 git submodule and its prebuilt Panacea mod loader is downloaded from official
 OpenKH releases at runtime.
 
-At runtime this product also downloads LuaBackend
-(https://github.com/Sirius902/LuaBackend) from its official releases.
+At runtime this product also downloads, and does not redistribute:
+
+- LuaBackend (https://github.com/Sirius902/LuaBackend), from its official releases.
+- Mods the user asks for, including Garden of Assemblage ROM Edition
+  (https://github.com/KH2FM-Mods-Num/GoA-ROM-Edition) and Re:Fined
+  (https://github.com/KH-ReFined/KH-ReFined). These remain the work and property
+  of their authors, under their own terms.
+- The KH2 Tracker (https://github.com/Dee-Ayy/KH2Tracker), when the user opens it.
+- The KH2 Randomizer seed generator source
+  (https://github.com/tommadness/KH2Randomizer) and a self-contained Python from
+  python-build-standalone (https://github.com/astral-sh/python-build-standalone,
+  MPL-2.0), when the user installs the generator.
+- Microsoft .NET redistributables, from Microsoft, when a feature needs them
+  inside the Wine bottle.
+
+This product bundles no third-party binaries. Its own dependencies are Avalonia
+(MIT) and LibGit2Sharp (MIT).
 
 This project is not affiliated with Square Enix or Disney. It does not
 distribute any game assets; it operates on the user's own legally purchased

@@ -140,15 +140,37 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for architecture notes.
 
 ## Acknowledgements
 
-Special thanks to Xeeynamo and the OpenKH team for Panacea, the patcher and extraction
-libraries this tool reuses directly (vendored as a pinned submodule), and the Mods
-Manager this tool replaces.
+This tool is a thin shell around other people's work. Everything it does that
+matters to a player was built by someone else.
 
-Special thanks to TopazTK and Sirius902 for LuaBackend, tommadness and the KH2 Rando
-community for the randomizer and seed generator, Num for the Garden of Assemblage ROM
-Edition mod, Dee-Ayy for the KH2 item tracker, and KHOmega for the Linux setup guides
-whose Wine recipes this port adapts to CrossOver.
+- **[OpenKH](https://github.com/OpenKH/OpenKh)** — Xeeynamo and the OpenKH team, for
+  Panacea, the patcher and extraction libraries this reuses directly (vendored as a
+  pinned submodule), and the Mods Manager this replaces on Windows.
+- **[LuaBackend](https://github.com/Sirius902/LuaBackend)** — TopazTK and Sirius902,
+  for the Lua hook every script mod depends on.
+- **[KH2 Randomizer](https://github.com/tommadness/KH2Randomizer)** — tommadness and
+  the KH2 Rando community, for the randomizer and its seed generator, which this
+  installs and runs unmodified.
+- **[Garden of Assemblage ROM Edition](https://github.com/KH2FM-Mods-Num/GoA-ROM-Edition)**
+  — Num, for the mod every randomizer seed is built on.
+- **[KH2 Tracker](https://github.com/Dee-Ayy/KH2Tracker)** — Dee-Ayy, for the item
+  tracker, including the auto-tracking this runs beside the game.
+- **[Re:Fined](https://github.com/KH-ReFined/KH-ReFined)** — TopazTK and contributors,
+  for the quality-of-life overhaul this can install.
+- **[KH-SteamDeck-Setup](https://github.com/KHOmega/KH-SteamDeck-Setup)** — KHOmega,
+  for the Linux setup guides whose Wine recipes this port adapts to CrossOver.
 
-The seed generator installer script uses pyinstxtractor by extremecoders-re.
+The seed generator installer uses
+[pyinstxtractor](https://github.com/extremecoders-re/pyinstxtractor) by
+extremecoders-re, and a self-contained Python from
+[python-build-standalone](https://github.com/astral-sh/python-build-standalone)
+(MPL-2.0) so no Homebrew or developer tools are needed.
+
+The app itself is built with [Avalonia](https://github.com/AvaloniaUI/Avalonia) (MIT)
+and [LibGit2Sharp](https://github.com/libgit2/libgit2sharp) (MIT), on .NET. Mods run
+under [CrossOver](https://www.codeweavers.com/crossover) by CodeWeavers, and through
+it Wine, without which none of this would work on a Mac.
+
+Mods installed through this tool remain the work and property of their authors.
 
 License: Apache-2.0 (see [LICENSE](LICENSE) and [NOTICE](NOTICE)).
