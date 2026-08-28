@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.2 (2026-08-28)
 
 - Setup now installs the .NET Framework the item tracker needs, so the Tracker
   button works straight away instead of meeting a multi-minute install the first
