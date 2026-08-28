@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 (2026-08-28)
+
+- Fixed the app reporting a bottle as running when it was not, which left
+  "Quit Steam and the game first" on screen no matter how thoroughly you had
+  quit them, and blocked the tracker and Re:Fined installs
+- Installs that need the bottle to themselves now say so before asking rather
+  than after, so a refusal does not look like the button doing nothing
+
 ## 0.3.0 (2026-08-27)
 
 - Re:Fined support: an Install Re:Fined button, and the .NET runtime it needs is
