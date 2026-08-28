@@ -51,6 +51,17 @@ public partial class MainWindow : Window
         _workspace.EnsureDirectories();
         ModList.ItemsSource = _mods;
 
+        // Downloads are the long, silent part of Setup, and they are the one part that
+        // can say how far along it is.
+        GitHubApi.DownloadProgress += (name, done, total) =>
+        {
+            if (total is > 0)
+                ShowProgress($"Downloading {name} \u2014 {Mb(done)} of {Mb(total.Value)} MB",
+                    (double)done / total.Value);
+            else
+                ShowProgress($"Downloading {name} \u2014 {Mb(done)} MB");
+        };
+
         // Mods and seeds can be dragged straight onto the window (dock-icon drops
         // arrive separately via file activation in App).
         DragDrop.SetAllowDrop(this, true);
@@ -321,8 +332,49 @@ public partial class MainWindow : Window
         {
             LogText.Text += $"\n{message}";
             LogScroll.ScrollToEnd();
+            // Every step already announces itself in the log, so the newest line is the
+            // best caption available. Warnings are skipped: they are asides, and one
+            // would otherwise sit over the bar for the rest of the operation.
+            if (ProgressRow.IsVisible && message.Length > 0
+                && !message.StartsWith("WARNING", StringComparison.Ordinal)
+                && !message.StartsWith("ERROR", StringComparison.Ordinal)
+                && !message.StartsWith(" ", StringComparison.Ordinal))
+            {
+                ProgressLabel.Text = message.TrimStart('[').TrimEnd(']');
+                TaskProgress.IsIndeterminate = true;
+                ProgressPercent.Text = "";
+            }
         });
     }
+
+    private static long Mb(long bytes) => bytes / 1024 / 1024;
+
+    /// <summary>
+    /// Show the progress strip. Indeterminate unless given a fraction: most steps are
+    /// installers running inside the bottle, which genuinely cannot say how far along
+    /// they are, and a bar that invents a number is worse than one that admits it.
+    /// </summary>
+    private void ShowProgress(string label, double? fraction = null)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            ProgressRow.IsVisible = true;
+            ProgressLabel.Text = label;
+            if (fraction is { } f)
+            {
+                TaskProgress.IsIndeterminate = false;
+                TaskProgress.Value = Math.Clamp(f * 100, 0, 100);
+                ProgressPercent.Text = $"{(int)(f * 100)}%";
+            }
+            else
+            {
+                TaskProgress.IsIndeterminate = true;
+                ProgressPercent.Text = "";
+            }
+        });
+    }
+
+    private void HideProgress() => Dispatcher.UIThread.Post(() => ProgressRow.IsVisible = false);
 
     private void SetBusy(bool busy)
     {
@@ -361,6 +413,12 @@ public partial class MainWindow : Window
         }
         SetBusy(true);
         Log($"[{label}]");
+        // Hold the strip back briefly: removing a mod or toggling a setting finishes in
+        // milliseconds, and a bar that flashes on every click reads as a glitch.
+        using var settled = new CancellationTokenSource();
+        _ = Task.Delay(400, settled.Token)
+            .ContinueWith(_ => ShowProgress(label), settled.Token,
+                TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         try
         {
             await work();
@@ -373,7 +431,9 @@ public partial class MainWindow : Window
         }
         finally
         {
+            settled.Cancel();
             SetBusy(false);
+            HideProgress();
             try
             {
                 await RefreshAllAsync();
@@ -607,12 +667,15 @@ public partial class MainWindow : Window
         var lastPercent = -1;
         await new ExtractionService().ExtractKh2(_config.GameDir, _config.Language, _workspace.DataDir, p =>
         {
+            // Fires once per file, tens of thousands of times; only act when the whole
+            // percent changes or every update is a cross-thread post for nothing.
             var percent = (int)(p * 100);
-            if (percent != lastPercent && percent % 5 == 0)
-            {
-                lastPercent = percent;
+            if (percent == lastPercent)
+                return;
+            lastPercent = percent;
+            ShowProgress("Extracting game data", p);
+            if (percent % 5 == 0)
                 Log($"  {percent}%");
-            }
         });
         Log("Extraction complete ✓");
     });

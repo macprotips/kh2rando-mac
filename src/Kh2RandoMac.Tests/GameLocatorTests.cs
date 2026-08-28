@@ -84,3 +84,47 @@ public class GameLocatorTests : IDisposable
         Assert.Empty(GameLocator.ParseLibraryFolders("\"libraryfolders\"\n{\n}\n"));
     }
 }
+
+public class AppConfigTests : IDisposable
+{
+    private readonly string _dir;
+
+    public AppConfigTests()
+    {
+        _dir = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_dir);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_dir, true); } catch { }
+    }
+
+    private string ConfigPath => Path.Combine(_dir, "config.json");
+
+    [Fact]
+    public void Save_RoundTripsAndLeavesNoStagingFileBehind()
+    {
+        new AppConfig { BottleName = "KH2", GameDir = "/games/kh", Launcher = "EGS" }.Save(ConfigPath);
+
+        var loaded = AppConfig.Load(ConfigPath);
+        Assert.Equal("KH2", loaded.BottleName);
+        Assert.Equal("/games/kh", loaded.GameDir);
+        Assert.Equal("EGS", loaded.Launcher);
+        Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
+    }
+
+    [Fact]
+    public void Save_ConcurrentWritersNeverLeaveTheConfigUnreadable()
+    {
+        // Two copies of the app saving at once used to share one staging file, so one
+        // could truncate the other's text and then move the wreckage into place.
+        Parallel.For(0, 40, i =>
+            new AppConfig { BottleName = $"bottle{i}", GameDir = "/games/kh" }.Save(ConfigPath));
+
+        var loaded = AppConfig.Load(ConfigPath);
+        Assert.StartsWith("bottle", loaded.BottleName);
+        Assert.Equal("/games/kh", loaded.GameDir);
+        Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
+    }
+}

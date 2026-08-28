@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- A progress strip above the log shows what Setup is doing and how far along it
+  is. Downloads report real percentages; steps that cannot say, such as installers
+  running inside the bottle, show an indeterminate bar rather than a made-up
+  number. Extraction drives it too
+- Fixed settings being lost when two copies of the app saved at the same moment.
+  Both wrote to one staging file, so one could truncate the other's half-written
+  text and move the wreckage into place; the config then failed to load and was
+  set aside for defaults
+
 - Setup also installs the .NET 8 Desktop Runtime Re:Fined needs, so a Build with
   Re:Fined enabled never stops to install anything
 - Dropped the Reset note from the README and setup guide

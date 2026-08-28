@@ -38,6 +38,17 @@ public static class GitHubApi
     /// Callers treat File.Exists(destination) as "already downloaded", so a connection
     /// dropped mid-download used to leave a truncated file that every retry accepted.
     /// </summary>
+    /// <summary>
+    /// Raised while a file downloads: the file name, bytes so far, and the total when
+    /// the server declares one. An event rather than a callback argument because the
+    /// services in between (Panacea, the tracker, Re:Fined) would each have to carry a
+    /// parameter through solely to hand it back; only one download runs at a time.
+    /// </summary>
+    public static event Action<string, long, long?>? DownloadProgress;
+
+    /// <summary>Report at most every quarter megabyte; the UI cannot use more.</summary>
+    private const long ProgressStep = 256 * 1024;
+
     public static async Task DownloadFile(string url, string destination)
     {
         using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
@@ -46,8 +57,26 @@ public static class GitHubApi
         var partial = destination + ".part";
         try
         {
+            var total = response.Content.Headers.ContentLength;
+            var name = Path.GetFileName(destination);
             await using (var output = File.Create(partial))
-                await response.Content.CopyToAsync(output);
+            await using (var input = await response.Content.ReadAsStreamAsync())
+            {
+                var buffer = new byte[81920];
+                long done = 0, reported = 0;
+                int read;
+                DownloadProgress?.Invoke(name, 0, total);
+                while ((read = await input.ReadAsync(buffer)) > 0)
+                {
+                    await output.WriteAsync(buffer.AsMemory(0, read));
+                    done += read;
+                    if (done - reported < ProgressStep)
+                        continue;
+                    reported = done;
+                    DownloadProgress?.Invoke(name, done, total);
+                }
+                DownloadProgress?.Invoke(name, done, total);
+            }
 
             var expected = response.Content.Headers.ContentLength;
             var actual = new FileInfo(partial).Length;

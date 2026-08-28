@@ -213,12 +213,26 @@
               ToolTip.Tip="Builds, then launches the game through CrossOver."/>
     </StackPanel>
 
-    <!-- Log -->
-    <Border Grid.Row="5" Background="#181818" CornerRadius="8" Padding="8" Height="120">
-      <ScrollViewer x:Name="LogScroll">
-        <TextBlock x:Name="LogText" FontFamily="Menlo, monospace" FontSize="11"
-                   TextWrapping="Wrap" Text="Ready."/>
-      </ScrollViewer>
+    <!-- Log, with a progress strip above it while something is running. Setup pulls
+         down a few hundred MB and runs installers inside the bottle; without this the
+         window looks frozen for minutes at a time. -->
+    <Border Grid.Row="5" Background="#181818" CornerRadius="8" Padding="8" Height="146">
+      <Grid RowDefinitions="Auto,*">
+        <Grid x:Name="ProgressRow" ColumnDefinitions="*,Auto" IsVisible="False" Margin="0,1,0,8">
+          <StackPanel Spacing="5">
+            <TextBlock x:Name="ProgressLabel" FontSize="11" Foreground="#D8FFFFFF"
+                       TextTrimming="CharacterEllipsis"/>
+            <ProgressBar x:Name="TaskProgress" Height="3" Minimum="0" Maximum="100"
+                         IsIndeterminate="True"/>
+          </StackPanel>
+          <TextBlock Grid.Column="1" x:Name="ProgressPercent" FontSize="11" Opacity="0.55"
+                     VerticalAlignment="Center" Margin="10,0,2,0"/>
+        </Grid>
+        <ScrollViewer Grid.Row="1" x:Name="LogScroll">
+          <TextBlock x:Name="LogText" FontFamily="Menlo, monospace" FontSize="11"
+                     TextWrapping="Wrap" Text="Ready."/>
+        </ScrollViewer>
+      </Grid>
     </Border>
 
     <TextBlock x:Name="VersionText" Grid.Row="6" HorizontalAlignment="Right"
