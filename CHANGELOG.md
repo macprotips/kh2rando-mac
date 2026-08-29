@@ -49,6 +49,9 @@ Everything from 0.3.2, which was built but never published.
 - The seed generator installs alongside everything else in the files folder, and has
   a sharper icon.
 - Status header laid out in rows, with the paths given full width.
+- The mod list and the log can be resized against each other, and the window remembers
+  its size and that split between launches. The log previously held a fixed height, so
+  shrinking the window came out of the mod list alone.
 
 ## 0.3.1 (2026-08-28)
 

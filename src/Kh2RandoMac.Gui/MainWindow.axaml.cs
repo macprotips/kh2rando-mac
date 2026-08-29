@@ -112,6 +112,11 @@ public partial class MainWindow : Window
         SetUpCrossOverPicker();
         _ = RefreshAllAsync();
 
+        // Opens the way it was left. Saved on the way out rather than on every drag,
+        // which would write the config continuously while someone resizes.
+        Opened += (_, _) => RestoreLayout();
+        Closing += (_, _) => SaveLayout();
+
         Opened += async (_, _) =>
         {
             if (_otherInstancePid != null)
@@ -519,6 +524,71 @@ public partial class MainWindow : Window
                 ProgressPercent.Text = "";
             }
         });
+    }
+
+    /// <summary>Which row of the window holds the log; the splitter moves it.</summary>
+    private const int LogRowIndex = 5;
+
+    /// <summary>
+    /// Put the window back to the size it was left at, and the log back to the height it
+    /// was dragged to. Clamped to the screen actually in use: a size saved on a large
+    /// display must not open a window taller than a small one.
+    /// </summary>
+    private void RestoreLayout()
+    {
+        try
+        {
+            if (_config.WindowWidth is > 0 && _config.WindowHeight is > 0)
+            {
+                var area = (Screens.ScreenFromWindow(this) ?? Screens.Primary)?.WorkingArea;
+                var scale = (Screens.ScreenFromWindow(this) ?? Screens.Primary)?.Scaling ?? 1;
+                var maxWidth = area != null ? area.Value.Width / scale : double.MaxValue;
+                var maxHeight = area != null ? area.Value.Height / scale : double.MaxValue;
+                Width = Math.Clamp(_config.WindowWidth.Value, MinWidth, Math.Max(MinWidth, maxWidth));
+                Height = Math.Clamp(_config.WindowHeight.Value, MinHeight, Math.Max(MinHeight, maxHeight));
+            }
+
+            if (_config.LogHeight is > 0)
+                RootGrid.RowDefinitions[LogRowIndex].Height = new GridLength(SaneLogHeight(_config.LogHeight.Value));
+        }
+        catch (Exception ex)
+        {
+            // A remembered layout is a convenience; never let it stop the window opening.
+            FileLog.Write($"[gui] could not restore the layout: {ex.Message}");
+        }
+    }
+
+    private void SaveLayout()
+    {
+        // The duplicate copy closes itself moments after opening; its size is not a
+        // choice anyone made.
+        if (_otherInstancePid != null)
+            return;
+        try
+        {
+            var config = AppConfig.Load();
+            config.WindowWidth = Width;
+            config.WindowHeight = Height;
+            config.LogHeight = SaneLogHeight(RootGrid.RowDefinitions[LogRowIndex].ActualHeight);
+            config.Save();
+        }
+        catch (Exception ex)
+        {
+            FileLog.Write($"[gui] could not save the layout: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// A log height the window can actually honour: at least its floor, and never more
+    /// than half the window. A fixed row takes its height whether or not there is room,
+    /// so a value saved on a taller screen would otherwise push the list off the bottom
+    /// rather than being trimmed to fit.
+    /// </summary>
+    private double SaneLogHeight(double requested)
+    {
+        var row = RootGrid.RowDefinitions[LogRowIndex];
+        var cap = Math.Max(row.MinHeight, Height / 2);
+        return Math.Clamp(requested, row.MinHeight, cap);
     }
 
     private bool _measuringWorkspace;

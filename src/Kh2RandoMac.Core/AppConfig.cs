@@ -43,6 +43,16 @@ public class AppConfig
 
     public string WorkspaceRoot { get; set; } = AppPaths.DefaultWorkspace;
     /// <summary>Language folder under Image/ containing the .hed/.pkg files (usually "en", "dt" on Steam, "jp" for Japan).</summary>
+    /// <summary>
+    /// Window size and the height given to the log, remembered so the app opens the way
+    /// it was left. Null until someone has resized something.
+    /// </summary>
+    public double? WindowWidth { get; set; }
+
+    public double? WindowHeight { get; set; }
+
+    public double? LogHeight { get; set; }
+
     public string Language { get; set; } = "en";
 
     /// <summary>Accepts steam/STEAM/epic/egs/... and returns the canonical value.</summary>

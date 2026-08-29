@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Kh2RandoMac.Gui.MainWindow"
         Title="KH2 Rando Manager"
-        Width="1180" Height="800"
-        MinWidth="960" MinHeight="720">
+        Width="1200" Height="880"
+        MinWidth="960" MinHeight="800">
 
   <Window.Styles>
     <!-- Hairline between button groups, so related controls read as a set. -->
@@ -40,7 +40,7 @@
     </Style>
   </Window.Styles>
 
-  <Grid Margin="20">
+  <Grid x:Name="RootGrid" Margin="20">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>                <!-- status header -->
       <RowDefinition Height="Auto"/>                <!-- install row -->
@@ -48,17 +48,17 @@
       <!-- The mod list is what the window is for, so it takes the slack and keeps a
            floor: shrinking the window used to come out of it alone, because the log
            below held a fixed height and gave nothing back. -->
-      <RowDefinition Height="*" MinHeight="150"/>   <!-- mod list -->
+      <RowDefinition Height="*" MinHeight="132"/>   <!-- mod list -->
       <RowDefinition Height="Auto"/>                <!-- splitter -->
-      <RowDefinition Height="150" MinHeight="64"/>  <!-- log, dragged by the splitter -->
+      <RowDefinition Height="128" MinHeight="60"/>  <!-- log, dragged by the splitter -->
       <RowDefinition Height="Auto"/>                <!-- build actions -->
       <RowDefinition Height="Auto"/>                <!-- version -->
     </Grid.RowDefinitions>
 
     <!-- Status header: what the app knows, plus the setup and upkeep actions -->
-    <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="20,18" Margin="0,0,0,16">
-      <StackPanel Spacing="13">
-        <StackPanel Spacing="11">
+    <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="20,14" Margin="0,0,0,12">
+      <StackPanel Spacing="10">
+        <StackPanel Spacing="9">
           <!-- Trailing Auto column is local to this row; the badge and label columns
                match the rows below so the left edges still line up. -->
           <Grid ColumnDefinitions="30,96,*,Auto">
