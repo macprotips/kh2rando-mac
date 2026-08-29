@@ -802,6 +802,16 @@ public partial class MainWindow : Window
     {
         if (_busy)
             return;
+        await RunTask("Move files", () => PickAndMoveWorkspaceAsync());
+    }
+
+    /// <summary>
+    /// Ask for a folder and move everything there, returning whether it moved. Does the
+    /// work inline rather than through RunTask so the first extraction can offer the
+    /// same choice from inside its own operation.
+    /// </summary>
+    private async Task<bool> PickAndMoveWorkspaceAsync()
+    {
         var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = "Choose where to keep KH2 Rando's files",
@@ -809,7 +819,7 @@ public partial class MainWindow : Window
         });
         var chosen = picked.FirstOrDefault()?.Path.LocalPath;
         if (chosen == null)
-            return;
+            return false;
 
         // Keep everything inside a named folder rather than scattering it across whatever
         // was picked, unless they picked such a folder already.
@@ -820,29 +830,34 @@ public partial class MainWindow : Window
         if (string.Equals(Path.GetFullPath(target), Path.GetFullPath(current), StringComparison.Ordinal))
         {
             Log("That is already where the files are.");
-            return;
+            return false;
         }
 
-        var (size, sameVolume) = await Task.Run(() =>
-            (WorkspaceMover.SizeOnDisk(current), WorkspaceMover.SameVolume(current, target)));
-        var gb = size / 1024 / 1024 / 1024;
+        var (size, sameVolume, free) = await Task.Run(() => (
+            WorkspaceMover.SizeOnDisk(current),
+            WorkspaceMover.SameVolume(current, target),
+            WorkspaceMover.FreeSpace(target)));
         var effort = sameVolume
             ? "Both are on the same disk, so moving is a rename and is immediate."
-            : $"They are on different disks, so about {gb} GB has to be copied. That takes a while, " +
-              "and the old copy is only removed once the new one is complete.";
+            : $"They are on different disks, so about {size / 1024 / 1024 / 1024} GB has to be copied. " +
+              "That takes a while, and the old copy is only removed once the new one is complete.";
 
         if (!await ConfirmAsync("Move the KH2 Rando files",
-                $"Everything moves from:\n{current}\n\nto:\n{target}\n\n{effort}", "Move"))
-            return;
+                $"Everything moves from:\n{current}\n\nto:\n{target}\n\n{effort}\n\n" +
+                $"{free / 1024 / 1024 / 1024} GB free there.", "Move"))
+            return false;
 
-        await RunTask("Move files", () => Task.Run(() =>
+        await Task.Run(() =>
         {
             WorkspaceMover.Move(current, target, Log);
             var config = AppConfig.Load();
             config.WorkspaceRoot = target;
             config.Save();
-            Log($"Files now kept in {target}.");
-        }));
+        });
+        _config = AppConfig.Load();
+        _workspace = new Workspace(_config.WorkspaceRoot);
+        Log($"Files now kept in {_workspace.Root}.");
+        return true;
     }
 
     private async void OnChangeGameFolder(object? sender, RoutedEventArgs e) =>
@@ -899,11 +914,36 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("Run Setup first.");
         if (!GameLocator.IsGameDir(_config.GameDir))
             throw new InvalidOperationException("Game folder not reachable, is the drive plugged in?");
-        // Checked before starting, not discovered by filling someone's disk. The folder
-        // is changeable, but only if they learn that before the 30 GB lands on the
-        // wrong drive rather than after.
+        // The first extraction is the moment the folder starts mattering: before it,
+        // moving costs nothing, and afterwards it means shifting 30 GB. So the choice is
+        // put to people here rather than left to be discovered later.
         const long needed = 32L * 1024 * 1024 * 1024;
         var free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
+        if (!ExtractionService.LooksExtracted(_workspace.DataDir))
+        {
+            var room = free > 0 ? $"{free / 1024 / 1024 / 1024} GB free" : "free space unknown";
+            var choice = await ChooseAsync("Where should the game data go?",
+                "Extracting unpacks about 30 GB. Choose where it is kept; it can be moved " +
+                "later, but moving it afterwards means shifting all of it again.",
+                new List<string>
+                {
+                    $"{_workspace.Root}\n{room}",
+                    "Choose another folder\u2026",
+                });
+            if (choice < 0)
+            {
+                Log("Extraction cancelled.");
+                return;
+            }
+            if (choice == 1 && !await PickAndMoveWorkspaceAsync())
+            {
+                Log("Extraction cancelled, the files were left where they were.");
+                return;
+            }
+            free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
+        }
+
+        // Refused rather than discovered by filling someone's disk.
         if (free > 0 && free < needed)
         {
             await NoticeAsync("Not enough room",

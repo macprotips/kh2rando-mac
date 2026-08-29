@@ -18,6 +18,13 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- The first extraction asks where the game data should go, before writing any of
+  it. Moving the folder beforehand costs nothing; moving it afterwards means
+  shifting 30 GB again, so the choice belongs at that moment
+- Extraction refuses when there is not room for it, naming the folder and the
+  button that moves it, rather than filling the disk and failing part way
+- The seed generator installs beside the tracker in that same folder. It was the
+  one thing this app installs that lived elsewhere, so moving the files left it
 - A Files row in the header shows where mods, the extracted game data and the built
   mods are kept, with a button to move them. The extraction alone is about 30 GB and
   the location was fixed at the home folder, which is the wrong disk on a Mac whose
