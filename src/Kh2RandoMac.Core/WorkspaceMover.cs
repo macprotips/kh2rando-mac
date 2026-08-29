@@ -37,6 +37,18 @@ public static class WorkspaceMover
             .LastOrDefault() ?? probe;
     }
 
+    /// <summary>Free space on the volume a path is on, in bytes; 0 when it cannot be read.</summary>
+    public static long FreeSpace(string path)
+    {
+        var probe = Path.GetFullPath(path);
+        while (!Directory.Exists(probe) && Path.GetDirectoryName(probe) is { Length: > 0 } parent)
+            probe = parent;
+        var line = ShellCommand.Run("/bin/df", "-Pk", probe).Output
+            .Split('\n').Skip(1).FirstOrDefault();
+        var fields = line?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return fields is { Length: >= 4 } && long.TryParse(fields[3], out var kb) ? kb * 1024 : 0;
+    }
+
     /// <summary>Roughly how much is there, for a warning worth reading.</summary>
     public static long SizeOnDisk(string dir)
     {

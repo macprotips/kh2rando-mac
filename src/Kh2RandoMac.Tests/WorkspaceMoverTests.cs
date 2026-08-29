@@ -96,3 +96,21 @@ public class WorkspaceMoverTests : IDisposable
         Assert.True(WorkspaceMover.SameVolume(from, Path.Combine(_root, "not-created-yet")));
     }
 }
+
+public class FreeSpaceTests
+{
+    [Fact]
+    public void FreeSpace_ReportsSomethingPlausibleForAnExistingPath()
+    {
+        var free = WorkspaceMover.FreeSpace(Path.GetTempPath());
+        Assert.True(free > 0, "no free space reported for the temp folder");
+    }
+
+    [Fact]
+    public void FreeSpace_WorksForAFolderThatDoesNotExistYet()
+    {
+        // The destination of a move has not been created when this is asked.
+        var notYet = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"), "deep");
+        Assert.True(WorkspaceMover.FreeSpace(notYet) > 0);
+    }
+}

@@ -899,6 +899,22 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("Run Setup first.");
         if (!GameLocator.IsGameDir(_config.GameDir))
             throw new InvalidOperationException("Game folder not reachable, is the drive plugged in?");
+        // Checked before starting, not discovered by filling someone's disk. The folder
+        // is changeable, but only if they learn that before the 30 GB lands on the
+        // wrong drive rather than after.
+        const long needed = 32L * 1024 * 1024 * 1024;
+        var free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
+        if (free > 0 && free < needed)
+        {
+            await NoticeAsync("Not enough room",
+                $"Extracting needs about 30 GB and there is {free / 1024 / 1024 / 1024} GB free where " +
+                $"the files are kept:\n\n{_workspace.Root}\n\n" +
+                "Use Change Folder on the Files row to put them on a drive with room, " +
+                "then extract again.");
+            Log($"Extraction stopped: about 30 GB needed, {free / 1024 / 1024 / 1024} GB free at {_workspace.Root}.");
+            return;
+        }
+
         Log("Extracting KH2 data, this takes 10-20 minutes. Leave the app open.");
         var lastPercent = -1;
         await new ExtractionService().ExtractKh2(_config.GameDir, _config.Language, _workspace.DataDir, p =>
@@ -1464,6 +1480,9 @@ public partial class MainWindow : Window
                 RedirectStandardError = true,
             };
             psi.ArgumentList.Add(script);
+            // Keep it with the mods, the extracted data and the tracker, so moving the
+            // Files folder takes the generator with it instead of stranding it at home.
+            psi.ArgumentList.Add(Path.Combine(_workspace.Root, "seedgen"));
             using var process = System.Diagnostics.Process.Start(psi)!;
             process.OutputDataReceived += (_, args) => { if (!string.IsNullOrWhiteSpace(args.Data)) Log(args.Data); };
             process.ErrorDataReceived += (_, args) => { if (!string.IsNullOrWhiteSpace(args.Data)) Log(args.Data); };
