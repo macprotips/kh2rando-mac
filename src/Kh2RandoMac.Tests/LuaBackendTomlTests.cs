@@ -62,3 +62,58 @@ public class LuaBackendTomlTests
         return count;
     }
 }
+
+/// <summary>
+/// LuaBackend is told where the scripts are once, at setup. Moving the files leaves it
+/// reading from nowhere, which breaks every Lua mod, the Garden of Assemblage included,
+/// while Panacea and everything else still look correctly installed.
+/// </summary>
+public class StaleScriptsPathTests : IDisposable
+{
+    private readonly string _gameDir;
+
+    public StaleScriptsPathTests()
+    {
+        _gameDir = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_gameDir);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_gameDir, true); } catch { }
+    }
+
+    private void WriteToml(string scriptsPath) =>
+        File.WriteAllText(Path.Combine(_gameDir, "LuaBackend.toml"),
+            "[kh2]\nscripts = [{path = \"scripts/kh2\", relative = true}, " +
+            $"{{path = \"{scriptsPath}\", relative = false}}]\n");
+
+    [Fact]
+    public void MatchesWhenTheScriptsAreWhereLuaBackendWasTold()
+    {
+        WriteToml("Y:/KH2 Rando/mod/kh2/scripts");
+        Assert.True(LuaBackendService.ScriptsPathMatches(_gameDir, "Y:/KH2 Rando/mod/kh2/scripts"));
+    }
+
+    [Fact]
+    public void DoesNotMatchAfterTheFilesHaveMoved()
+    {
+        WriteToml("Y:/KH2 Rando/mod/kh2/scripts");
+        Assert.False(LuaBackendService.ScriptsPathMatches(_gameDir, "J:/Games/KH2 Rando/mod/kh2/scripts"));
+    }
+
+    [Fact]
+    public void IgnoresSeparatorAndCaseDifferences()
+    {
+        // The toml is written with forward slashes; the expected path is built from a
+        // Windows path. A spelling difference must not read as a move.
+        WriteToml("Y:/KH2 Rando/mod/kh2/scripts");
+        Assert.True(LuaBackendService.ScriptsPathMatches(_gameDir, @"y:\KH2 Rando\mod\kh2\scripts"));
+    }
+
+    [Fact]
+    public void SaysNothingWhenLuaBackendIsNotInstalled()
+    {
+        Assert.True(LuaBackendService.ScriptsPathMatches(_gameDir, "Y:/anything"));
+    }
+}

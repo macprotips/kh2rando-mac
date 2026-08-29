@@ -111,12 +111,12 @@ public class SetupService
     /// and restore the movie folder. The game returns to vanilla. Mods, extracted data,
     /// and the workspace are left alone so a later re-setup is quick.
     /// </summary>
-    public void ResetToVanilla(AppConfig config, Action<string> log)
+    public void ResetToVanilla(AppConfig config, Action<string> log, bool deleteExtractedData = false)
     {
         var gameDir = config.GameDir ?? throw new InvalidOperationException("Not set up yet, nothing to reset.");
         var bottle = Bottle.Resolve(config);
         if (!GameLocator.IsGameDir(gameDir))
-            throw new InvalidOperationException("Game folder not reachable. Is the drive mounted?");
+            throw new InvalidOperationException("Game folder not reachable. Is the drive plugged in?");
 
         // Registry first: it refuses while the bottle runs, and nothing should be
         // half-removed if the user needs to quit Steam and retry.
@@ -148,7 +148,12 @@ public class SetupService
             log("FPS HUD turned off.");
         }
 
-        log("The game is back to vanilla. Mods, seeds, and extracted data were kept;");
+        if (deleteExtractedData)
+            DeleteExtractedData(config, log);
+
+        log(deleteExtractedData
+            ? "The game is back to vanilla. Mods and seeds were kept;"
+            : "The game is back to vanilla. Mods, seeds, and extracted data were kept;");
         log("run Setup again at any time to re-enable modding.");
 
         // The runtimes are the one thing Reset cannot take back: uninstalling a .NET
@@ -179,6 +184,38 @@ public class SetupService
             // Unreadable registry: better to say nothing than to claim either way.
             return false;
         }
+    }
+
+    /// <summary>
+    /// Delete the unpacked game data, tens of gigabytes of it. Guarded against a
+    /// workspace root that is not one: this app has already seen its own config come
+    /// back unreadable once, and a recursive delete pointed at a home folder or a
+    /// volume root is not a mistake anyone recovers from.
+    /// </summary>
+    public static void DeleteExtractedData(AppConfig config, Action<string> log)
+    {
+        var workspace = new Workspace(config.WorkspaceRoot);
+        var data = Path.GetFullPath(workspace.DataDir);
+        var root = Path.GetFullPath(workspace.Root);
+        var home = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+
+        if (root == "/" || root == home || Path.GetDirectoryName(root) == null
+            || !data.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+        {
+            log($"WARNING: not deleting anything. '{root}' does not look like a folder this app made,");
+            log("and a recursive delete there would take more than the extracted data with it.");
+            return;
+        }
+
+        if (!Directory.Exists(data))
+        {
+            log("No extracted game data to delete.");
+            return;
+        }
+
+        log("Deleting the extracted game data, which can take a minute...");
+        Directory.Delete(data, true);
+        log("Extracted game data deleted. Run Extract Game Data before building again.");
     }
 
     /// <summary>Names of required overrides missing from the bottle registry (empty = healthy).</summary>

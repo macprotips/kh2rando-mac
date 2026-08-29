@@ -23,6 +23,27 @@
       <Setter Property="Background" Value="#22FFFFFF"/>
     </Style>
     <!-- Destructive actions get a warm tint so they are never confused with routine ones. -->
+    <!-- A secondary action that belongs beside its value rather than competing with it.
+         Quiet until hovered, like the reorder controls on the mod rows. -->
+    <Style Selector="Button.icon">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="7,5"/>
+      <Setter Property="CornerRadius" Value="5"/>
+    </Style>
+    <Style Selector="Button.icon /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#1FFFFFFF"/>
+    </Style>
+    <Style Selector="Button.icon Path">
+      <Setter Property="Fill" Value="#8AFFFFFF"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover Path">
+      <Setter Property="Fill" Value="#F2FFFFFF"/>
+    </Style>
+
     <!-- For a setting that is currently wrong in a way that costs someone their run,
          rather than merely being off. -->
     <Style Selector="Button.warning">
@@ -61,7 +82,18 @@
         <StackPanel Spacing="9">
           <!-- Trailing Auto column is local to this row; the badge and label columns
                match the rows below so the left edges still line up. -->
-          <Grid ColumnDefinitions="30,96,*,Auto">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="30"/>
+              <ColumnDefinition Width="96"/>
+              <!-- Sized to the text so the folder glyph lands right after it. Left to
+                   fill the window, the glyph sat at the far edge with a stretch of
+                   nothing between it and the value it acts on. The cap keeps a long
+                   game path from running the whole width. -->
+              <ColumnDefinition Width="Auto" MaxWidth="560"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             <Border x:Name="GameStatusBadge" Width="20" Height="20" CornerRadius="10"
                     HorizontalAlignment="Left" VerticalAlignment="Top">
               <TextBlock x:Name="GameStatusIcon" FontSize="11" FontWeight="Bold"
@@ -71,13 +103,16 @@
                        VerticalAlignment="Top" Margin="0,1,0,0"/>
             <StackPanel Grid.Column="2" Spacing="2">
               <TextBlock x:Name="GameStatusText" FontSize="13" TextWrapping="Wrap"/>
-              <TextBlock x:Name="GamePathText" FontSize="11" Opacity="0.45"
-                         TextTrimming="CharacterEllipsis" IsVisible="False"/>
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <TextBlock x:Name="GamePathText" FontSize="11" Opacity="0.45"
+                           MaxWidth="520" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" IsVisible="False"/>
+                <Button x:Name="ChangeGameButton" Classes="icon" Click="OnChangeGameFolder"
+                        ToolTip.Tip="Choose a different copy of the game, then set up the mod loader in it. Quit Steam and the game first.">
+                  <Path Width="15" Height="15" Stretch="Uniform" Data="M1,3.6 L6.1,3.6 L7.6,5.6 L15,5.6 L15,13.2 L1,13.2 Z"/>
+                </Button>
+              </StackPanel>
             </StackPanel>
-            <Button Grid.Column="3" x:Name="ChangeGameButton" Content="Change Folder"
-                    Click="OnChangeGameFolder" FontSize="12" Padding="10,3"
-                    Margin="12,0,0,0" VerticalAlignment="Top"
-                    ToolTip.Tip="Point the app at a different copy of the game, then set up the mod loader in it. Quit Steam and the game first."/>
           </Grid>
           <Grid ColumnDefinitions="30,96,*">
             <Border x:Name="LoaderStatusBadge" Width="20" Height="20" CornerRadius="10"
@@ -101,15 +136,26 @@
           </Grid>
           <!-- The workspace holds the extracted game data, about 30 GB of it, so where
                it lives is a real decision on a Mac with a small disk. -->
-          <Grid ColumnDefinitions="30,96,*,Auto">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="30"/>
+              <ColumnDefinition Width="96"/>
+              <ColumnDefinition Width="Auto" MaxWidth="560"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="1" Text="Files" FontSize="13" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="2" x:Name="WorkspaceText" FontSize="12" Opacity="0.75"
-                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-            <Button Grid.Column="3" x:Name="ChangeWorkspaceButton" Content="Change Folder"
-                    Click="OnChangeWorkspace" FontSize="12" Padding="10,3"
-                    Margin="12,0,0,0"
-                    ToolTip.Tip="Where mods, the extracted game data and the built mods are kept. The extraction alone is about 30 GB, so an external drive is a reasonable place for it."/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7"
+                        VerticalAlignment="Center">
+              <TextBlock x:Name="WorkspaceText" FontSize="12" Opacity="0.75"
+                         MaxWidth="520" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis"/>
+              <Button x:Name="ChangeWorkspaceButton" Classes="icon" Click="OnChangeWorkspace"
+                      ToolTip.Tip="Choose where mods, the extracted game data and the built mods are kept. The extraction alone is about 30 GB, so an external drive is a reasonable place for it.">
+                <Path Width="15" Height="15" Stretch="Uniform" Data="M1,3.6 L6.1,3.6 L7.6,5.6 L15,5.6 L15,13.2 L1,13.2 Z"/>
+              </Button>
+            </StackPanel>
           </Grid>
           <!-- Shown whenever there is a bottle, including when there is only one: this
                is where someone looks to find out which bottle the game is in, and how to
@@ -158,7 +204,7 @@
           <Button x:Name="LogButton" Content="Log" Click="OnRevealLog"
                   ToolTip.Tip="Shows the app's log file in Finder. Attach it to bug reports."/>
           <Button x:Name="ResetButton" Classes="destructive" Content="Reset…" Click="OnReset"
-                  ToolTip.Tip="Returns the game to vanilla: removes Panacea, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
+                  ToolTip.Tip="Returns the game to vanilla: removes Panacea, LuaBackend, and the bottle changes. Mods and seeds are kept; you choose whether the extracted game data goes too."/>
         </StackPanel>
       </StackPanel>
     </Border>
@@ -257,6 +303,7 @@
       <Button x:Name="SeedGenButton" Content="Seed Generator" Padding="14,8"
               Click="OnOpenSeedGenerator"
               ToolTip.Tip="Opens the KH2 Randomizer seed generator. The first click installs it, which takes a few minutes."/>
+      <Border Classes="divider" Margin="6,4"/>
       <Button x:Name="TrackerButton" Content="Tracker" Padding="14,8"
               Click="OnTracker"
               ToolTip.Tip="Opens the KH2 item tracker. If Setup has not already installed what it needs, the first click does, which can take ten minutes. Quit Steam and the game first."/>

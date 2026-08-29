@@ -61,7 +61,7 @@ public class ModsService
         if (!File.Exists(Path.Combine(modPath, "mod.yml")))
         {
             Directory.Delete(modPath, true);
-            throw new InvalidOperationException($"'{repo}' has no mod.yml, not an OpenKH mod.");
+            throw new InvalidOperationException($"'{repo}' has no mod.yml, so it is not an OpenKH mod.");
         }
         progress?.Invoke($"Installed {repo}.");
         return repo;
@@ -79,7 +79,7 @@ public class ModsService
         var isPcPatch = PcPatchExtensions.Any(e => zipPath.EndsWith(e, StringComparison.OrdinalIgnoreCase));
         using var zip = ZipFile.OpenRead(zipPath);
         if (!isPcPatch && zip.GetEntry("mod.yml") == null)
-            throw new InvalidOperationException($"'{zipPath}' has no mod.yml at its root, not an OpenKH mod zip.");
+            throw new InvalidOperationException($"'{zipPath}' has no mod.yml at its root, so it is not an OpenKH mod zip.");
 
         var modPath = _workspace.ModPath(modName);
         ReplaceExistingModDir(modPath, modName, progress);
@@ -112,7 +112,7 @@ public class ModsService
             var dest = Path.GetFullPath(Path.Combine(modPath, relative));
             // Zip-slip guard: never extract outside the mod's own folder.
             if (!dest.StartsWith(modRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-                throw new InvalidOperationException($"Zip entry '{entry.FullName}' escapes the mod folder, refusing to extract.");
+                throw new InvalidOperationException($"Zip entry '{entry.FullName}' escapes the mod folder, so it will not be extracted.");
             Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
             entry.ExtractToFile(dest, true);
         }

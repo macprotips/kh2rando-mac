@@ -33,7 +33,7 @@ public class LuaBackendService
 
         File.Copy(dll, Path.Combine(gameDir, "LuaBackend.dll"), true);
 
-        var scriptsPathWin = bottle.ToWindowsPath(Path.Combine(workspace.CompiledModRoot, "kh2", "scripts")).Replace('\\', '/');
+        var scriptsPathWin = ExpectedScriptsPath(bottle, workspace);
         var config = PatchToml(File.ReadAllText(toml), scriptsPathWin, launcher == "Steam");
         File.WriteAllText(Path.Combine(gameDir, "LuaBackend.toml"), config);
         Directory.Delete(tempDir, true);
@@ -77,6 +77,33 @@ public class LuaBackendService
         }
         return config;
     }
+
+    /// <summary>
+    /// The scripts folder LuaBackend will actually read, written into the game folder at
+    /// setup. Moving the files leaves it reading from nowhere, which breaks every Lua
+    /// mod, the Garden of Assemblage included, while everything else looks installed.
+    /// </summary>
+    public static bool ScriptsPathMatches(string gameDir, string expectedScriptsPathWin)
+    {
+        var toml = Path.Combine(gameDir, "LuaBackend.toml");
+        if (!File.Exists(toml))
+            return true; // Not installed; reported separately rather than twice.
+        try
+        {
+            var wanted = expectedScriptsPathWin.Replace('\\', '/').TrimEnd('/');
+            return File.ReadAllText(toml)
+                .Replace('\\', '/')
+                .Contains(wanted, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return true; // Unreadable: do not raise an alarm on a guess.
+        }
+    }
+
+    /// <summary>The scripts path setup records, for comparing against what is there.</summary>
+    public static string ExpectedScriptsPath(Bottle bottle, Workspace workspace) =>
+        bottle.ToWindowsPath(Path.Combine(workspace.CompiledModRoot, "kh2", "scripts")).Replace('\\', '/');
 
     public static bool IsInstalled(string gameDir) =>
         File.Exists(Path.Combine(gameDir, "LuaBackend.dll")) && File.Exists(Path.Combine(gameDir, "LuaBackend.toml"));

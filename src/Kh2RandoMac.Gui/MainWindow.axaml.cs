@@ -280,6 +280,31 @@ public partial class MainWindow : Window
         SelectConfiguredBottle();
     }
 
+    /// <summary>
+    /// Tell the game where the mods went. Only setup writes that path, so a move has to
+    /// run it again or the game keeps loading from the old folder and quietly applies
+    /// nothing.
+    /// </summary>
+    private async Task RepointGameAtMovedFilesAsync()
+    {
+        if (_config.GameDir == null || !GameLocator.IsGameDir(_config.GameDir)
+            || !PanaceaService.IsInstalled(_config.GameDir))
+            return; // Nothing set up to re-point; Run Setup will do it when they get there.
+
+        try
+        {
+            var install = await Task.Run(() =>
+                GameLocator.ForFolder(_config.GameDir!, _config.BottleName, _config.Launcher));
+            await RunSetupFor(install);
+            Log("The game has been pointed at the new location.");
+        }
+        catch (Exception ex)
+        {
+            Log($"WARNING: the files moved, but the game could not be told where they went ({ex.Message}).");
+            Log("Mods will not apply until you click Run Setup.");
+        }
+    }
+
     /// <summary>Read the machine for everything a bottle switch turns on.</summary>
     private BottleSwitchFacts GatherSwitchFacts(Bottle target)
     {
@@ -375,7 +400,7 @@ public partial class MainWindow : Window
             try
             {
                 if (TrackerService.HasDotNet48(Bottle.Resolve(_config)))
-                    Log("The tracker takes up to half a minute longer the first time you open it after this. Nothing else to do.");
+                    Log("The tracker takes up to half a minute longer the first time you open it after this. Nothing else is needed.");
             }
             catch
             {
@@ -737,6 +762,33 @@ public partial class MainWindow : Window
         bool? MoviesSkipped, bool? HudEnabled, List<Bottle> Bottles,
         Dictionary<string, long> ModSizes);
 
+    /// <summary>
+    /// Which parts of the mod loader are still pointed at where the files used to be.
+    /// Both paths are written once, at setup, so moving the files afterwards leaves the
+    /// game loading from nowhere. Nothing errors when that happens, which is exactly why
+    /// it has to be looked for: Panacea going stale means no mods apply at all, and
+    /// LuaBackend going stale breaks every Lua mod including the Garden of Assemblage
+    /// while the rest still looks fine.
+    /// </summary>
+    private static List<string> StaleLoaderPaths(AppConfig config, Workspace workspace)
+    {
+        var stale = new List<string>();
+        try
+        {
+            var bottle = Bottle.Resolve(config);
+            if (!PanaceaService.ModPathMatches(config.GameDir!, bottle.ToWindowsPath(workspace.CompiledModRoot)))
+                stale.Add("the mod folder");
+            if (!LuaBackendService.ScriptsPathMatches(config.GameDir!,
+                    LuaBackendService.ExpectedScriptsPath(bottle, workspace)))
+                stale.Add("the Lua scripts folder");
+        }
+        catch
+        {
+            // Bottle gone or unreadable; the game row already reports that.
+        }
+        return stale;
+    }
+
     /// <summary>Gathers state off the UI thread (filesystem scans can block on slow drives), then paints.</summary>
     private async Task RefreshAllAsync()
     {
@@ -754,7 +806,7 @@ public partial class MainWindow : Window
 
             StatusRow loaderRow;
             if (config.GameDir == null)
-                loaderRow = StatusRow.Idle("Installed by Run Setup.");
+                loaderRow = StatusRow.Idle("Installed when you click Run Setup.");
             else if (!gameOk)
                 loaderRow = StatusRow.Idle("Can't check while the game drive is unplugged.");
             else
@@ -767,6 +819,15 @@ public partial class MainWindow : Window
                 loaderRow = missing.Count == 0
                     ? StatusRow.Ok("Panacea and LuaBackend installed.")
                     : StatusRow.Warn($"{string.Join(" and ", missing)} missing. Click Run Setup to reinstall.");
+
+                // The game is told once, at setup, where the mods are. Move them and it
+                // still starts, finds nothing there, and plays as though no mods were
+                // installed. Nothing errors, so this is the only place it can be caught.
+                if (missing.Count == 0 && StaleLoaderPaths(config, workspace) is { Count: > 0 } stale)
+                    loaderRow = StatusRow.Warn(
+                        $"Installed, but still looking for {string.Join(" and ", stale)} where " +
+                        $"{(stale.Count == 1 ? "it" : "they")} used to be, so mods will not load. " +
+                        "Click Run Setup to fix it.");
             }
 
             var dataRow = !ExtractionService.LooksExtracted(workspace.DataDir)
@@ -819,9 +880,6 @@ public partial class MainWindow : Window
         MoviesButton.IsEnabled = status.MoviesSkipped != null && !_busy;
         HudButton.Content = status.HudEnabled == true ? "FPS HUD: On" : "FPS HUD: Off";
         HudButton.IsEnabled = status.HudEnabled != null && !_busy;
-        if ((DateTime.Now - _resetArmedAt).TotalSeconds > 10)
-            ResetButton.Content = "Reset…";
-
 
         _refreshing = true;
         _mods.Clear();
@@ -977,6 +1035,11 @@ public partial class MainWindow : Window
         _config = AppConfig.Load();
         _workspace = new Workspace(_config.WorkspaceRoot);
         Log($"Files now kept in {_workspace.Root}.");
+
+        // The game holds the old location, written into its folder at setup, and would
+        // go on loading mods from where they are not. Moving the files without saying so
+        // is precisely how someone ends up with a game that runs and ignores every mod.
+        await RepointGameAtMovedFilesAsync();
         return true;
     }
 
@@ -1017,7 +1080,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Record an install and put the mod loader in it. Setup and Change Folder are the
+    /// Record an install and put the mod loader in it. Setup and the game-folder picker are the
     /// same operation once the folder is known, so they share this.
     /// </summary>
     private async Task RunSetupFor(GameInstall install)
@@ -1057,7 +1120,7 @@ public partial class MainWindow : Window
         {
             if (!await PickAndMoveWorkspaceAsync())
             {
-                Log("Extraction cancelled, the files were left where they were.");
+                Log("Extraction cancelled; the files stay where they were.");
                 return;
             }
             free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
@@ -1069,7 +1132,7 @@ public partial class MainWindow : Window
             await NoticeAsync("Not enough room",
                 $"Extracting needs about 30 GB and there is {free / 1024 / 1024 / 1024} GB free where " +
                 $"the files are kept:\n\n{_workspace.Root}\n\n" +
-                "Use Change Folder on the Files row to put them on a drive with room, " +
+                "Click the folder icon on the Files row to put them on a drive with room, " +
                 "then extract again.");
             Log($"Extraction stopped: about 30 GB needed, {free / 1024 / 1024 / 1024} GB free at {_workspace.Root}.");
             return;
@@ -1128,25 +1191,40 @@ public partial class MainWindow : Window
         await InstallFilesAsync(new[] { file });
     }
 
-    private DateTime _resetArmedAt = DateTime.MinValue;
 
     private async void OnReset(object? sender, RoutedEventArgs e)
     {
-        // Two-click confirm: arm on the first click, execute only if the second click
-        // comes within ten seconds.
-        if ((DateTime.Now - _resetArmedAt).TotalSeconds > 10)
-        {
-            _resetArmedAt = DateTime.Now;
-            ResetButton.Content = "Confirm Reset";
-            Log("Reset returns the game to vanilla: removes the mod loader, LuaBackend, and the");
-            Log("bottle changes, and restores movies. Mods, seeds, and extracted data are kept.");
-            Log("Quit Steam and the game first, then click Confirm Reset within 10 seconds.");
+        if (_busy)
             return;
-        }
-        _resetArmedAt = DateTime.MinValue;
-        ResetButton.Content = "Reset…";
+
+        // Asked as a choice rather than a yes/no, because there are two quite different
+        // things someone might mean by "reset" and one of them throws away hours.
+        var dataSize = await Task.Run(() => DiskUsage.Of(_workspace.DataDir));
+        var extracted = dataSize > 0 ? $" ({DiskUsage.Human(dataSize)})" : "";
+        var choice = await ChooseAsync("Reset",
+            "Both remove the mod loader, LuaBackend and the changes made to your bottle, and " +
+            "put the movie folder back. Quit Steam and the game first.",
+            new List<string>
+            {
+                "Undo the setup\nMods, seeds, and the extracted game data are kept",
+                $"Undo the setup and delete the extracted game data{extracted}\nExtracting again takes 10 to 20 minutes",
+            });
+        if (choice < 0)
+            return;
+
+        var deleteData = choice == 1;
+        var whatGoes = dataSize > 0
+            ? $"the extracted game data ({DiskUsage.Human(dataSize)})"
+            : "the extracted game data";
+        if (deleteData && !await ConfirmAsync("Delete the extracted game data",
+                $"This deletes {whatGoes} from:\n\n" + _workspace.DataDir + "\n\n" +
+                "Nothing can be built until it has been extracted again, which takes 10 to 20 " +
+                "minutes. Your mods and seeds are not touched.",
+                "Delete"))
+            return;
+
         await RunTask("Reset to vanilla", () => Task.Run(() =>
-            new SetupService().ResetToVanilla(_config, Log)));
+            new SetupService().ResetToVanilla(_config, Log, deleteData)));
     }
 
     private async void OnCheckUpdates(object? sender, RoutedEventArgs e) => await RunTask("Check for mod updates", () => Task.Run(() =>
@@ -1651,7 +1729,7 @@ public partial class MainWindow : Window
             process.WaitForExit();
             if (process.ExitCode != 0)
                 throw new InvalidOperationException("Installer did not finish, see the messages above.");
-            Log("Seed Generator installed, it's on your Desktop. Click this button again to open it.");
+            Log("Seed Generator installed; it's on your Desktop. Click this button again to open it.");
         }));
     }
 
@@ -1692,8 +1770,8 @@ public partial class MainWindow : Window
             var mods = new ModsService(_workspace);
             var name = mods.InstallFromGit(RefinedService.MainMod, Log);
             mods.SetEnabled(name, true);
-            Log("Enabled. Click Build to apply; the first Build offers a one-time");
-            Log(".NET runtime install into the bottle, which Re:Fined runs on.");
+            Log("Enabled. Click Build to apply. If the bottle is missing the .NET runtime");
+            Log("Re:Fined runs on, Build offers to install it first, one time.");
             Log("For a normal playthrough, untick your seed and GoA first. For a rando");
             Log("run with Re:Fined, keep it between your seed and GoA in the list.");
         }));
@@ -1714,13 +1792,21 @@ public partial class MainWindow : Window
         foreach (var note in KnownIssues.ForEnabled(_workspace))
             Log("WARNING: " + note);
 
+        // Build succeeds whether or not the game can find what it builds, so this is
+        // worth repeating here: nothing else would tell them before they played.
+        if (_config.GameDir != null && GameLocator.IsGameDir(_config.GameDir)
+            && StaleLoaderPaths(_config, _workspace) is { Count: > 0 } stalePaths)
+            Log($"WARNING: the game is still looking for {string.Join(" and ", stalePaths)} where " +
+                $"{(stalePaths.Count == 1 ? "it" : "they")} used to be, so what was just built will " +
+                "not load. Click Run Setup, then Build again.");
+
         // Reset restores the movie folder, so a bottle that was reset and set up again
         // is playing cutscenes once more, and cutscenes crash the game here. Said at
         // build time because that is the last moment before someone plays.
         if (_config.GameDir != null && GameLocator.IsGameDir(_config.GameDir)
             && !MovieService.AreMoviesSkipped(_config.GameDir))
             Log("WARNING: Movies are on. Cutscenes crash the game under CrossOver, so the game " +
-                "will run until it reaches one. Click Movies to set 'Movies: Skipped'.");
+                "will run until it reaches one. Click the Movies button to skip them.");
         new PatchBuilder(_workspace).Build(Log, _config.Language);
     }
 

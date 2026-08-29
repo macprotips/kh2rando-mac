@@ -124,6 +124,46 @@ public class PanaceaService
     }
 
     /// <summary>
+    /// The mod folder the game will actually load from, as recorded in the game folder
+    /// during setup. Null when there is no settings file to read.
+    /// </summary>
+    public static string? RecordedModPath(string gameDir)
+    {
+        var path = Path.Combine(gameDir, SettingsFileName);
+        if (!File.Exists(path))
+            return null;
+        try
+        {
+            foreach (var line in File.ReadAllLines(path))
+            {
+                if (line.StartsWith("mod_path=", StringComparison.OrdinalIgnoreCase))
+                    return line["mod_path=".Length..].Trim();
+            }
+        }
+        catch
+        {
+            // Unreadable settings: treat as unknown rather than as a mismatch.
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Whether the game is pointed at the mods this app is building. The path is written
+    /// once, at setup, so moving the files afterwards leaves the game loading from
+    /// somewhere that no longer exists. Nothing fails when that happens: the game starts,
+    /// finds no mods, and plays as though none were installed.
+    /// </summary>
+    public static bool ModPathMatches(string gameDir, string expectedWindowsPath)
+    {
+        var recorded = RecordedModPath(gameDir);
+        if (recorded == null)
+            return true; // Not set up yet; the loader row reports that separately.
+        return string.Equals(Trim(recorded), Trim(expectedWindowsPath), StringComparison.OrdinalIgnoreCase);
+
+        static string Trim(string p) => p.TrimEnd('\\', '/');
+    }
+
+    /// <summary>
     /// Set one key in panacea_settings.txt, dropping every existing copy of it first.
     /// Mods Manager appends quick_launch on each run rather than replacing it, so a
     /// file that has been through it on Windows carries the key many times over.

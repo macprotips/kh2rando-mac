@@ -66,3 +66,63 @@ public class PanaceaSettingsTests : IDisposable
         Assert.Equal(new[] { "quick_launch_delay=5", "quick_launch=kh2" }, File.ReadAllLines(SettingsPath));
     }
 }
+
+/// <summary>
+/// The game is told where the mods are once, during setup. Moving them afterwards leaves
+/// it loading from nowhere, silently, which is how one user lost an evening.
+/// </summary>
+public class StaleModPathTests : IDisposable
+{
+    private readonly string _gameDir;
+
+    public StaleModPathTests()
+    {
+        _gameDir = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_gameDir);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_gameDir, true); } catch { }
+    }
+
+    private void WriteSettings(string modPath) =>
+        File.WriteAllLines(Path.Combine(_gameDir, PanaceaService.SettingsFileName),
+            new[] { $"mod_path={modPath}", "show_console=false" });
+
+    [Fact]
+    public void ReadsBackTheRecordedModPath()
+    {
+        WriteSettings(@"Y:\KH2 Rando\mod");
+        Assert.Equal(@"Y:\KH2 Rando\mod", PanaceaService.RecordedModPath(_gameDir));
+    }
+
+    [Fact]
+    public void MatchesWhenTheGameIsPointedWhereTheModsAre()
+    {
+        WriteSettings(@"Y:\KH2 Rando\mod");
+        Assert.True(PanaceaService.ModPathMatches(_gameDir, @"Y:\KH2 Rando\mod"));
+    }
+
+    [Fact]
+    public void DoesNotMatchAfterTheFilesHaveMoved()
+    {
+        WriteSettings(@"Y:\KH2 Rando\mod");
+        Assert.False(PanaceaService.ModPathMatches(_gameDir, @"Y:\Games\KH2 Rando\mod"));
+    }
+
+    [Fact]
+    public void IgnoresATrailingSeparatorAndCaseDifference()
+    {
+        WriteSettings(@"Y:\KH2 Rando\mod\");
+        Assert.True(PanaceaService.ModPathMatches(_gameDir, @"y:\kh2 rando\mod"));
+    }
+
+    [Fact]
+    public void SaysNothingWhenThereIsNoSettingsFileToCompare()
+    {
+        // Not set up yet is reported separately; this must not add a second complaint.
+        Assert.Null(PanaceaService.RecordedModPath(_gameDir));
+        Assert.True(PanaceaService.ModPathMatches(_gameDir, @"Y:\anything"));
+    }
+}

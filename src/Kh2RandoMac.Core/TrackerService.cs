@@ -189,7 +189,7 @@ public class TrackerService
         {
             if (!IsMonoPackage(name))
                 continue;
-            log($"Removing '{name}' (Wine's .NET substitute, it blocks the real installer)...");
+            log($"Removing '{name}' (Wine's .NET substitute; it blocks the real installer)...");
             RunBuiltin(bottle, "uninstaller", "--remove", id);
         }
 

@@ -114,3 +114,159 @@ public class FreeSpaceTests
         Assert.True(WorkspaceMover.FreeSpace(notYet) > 0);
     }
 }
+
+/// <summary>
+/// Reset can delete the unpacked game data, tens of gigabytes of it, so the guard on
+/// where it will do that is worth pinning down.
+/// </summary>
+public class ResetDataDeletionTests : IDisposable
+{
+    private readonly string _root;
+
+    public ResetDataDeletionTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_root);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, true); } catch { }
+    }
+
+    private (AppConfig Config, Workspace Workspace) Setup(string workspaceRoot)
+    {
+        var workspace = new Workspace(workspaceRoot);
+        workspace.EnsureDirectories();
+        Directory.CreateDirectory(Path.Combine(workspace.DataDir, "kh2"));
+        File.WriteAllText(Path.Combine(workspace.DataDir, "kh2", "extracted.bin"), "game data");
+        return (new AppConfig { WorkspaceRoot = workspaceRoot }, workspace);
+    }
+
+    [Fact]
+    public void DeletesTheExtractedDataForARealWorkspace()
+    {
+        var (config, workspace) = Setup(Path.Combine(_root, "KH2 Rando"));
+        var messages = new List<string>();
+
+        SetupService.DeleteExtractedData(config, messages.Add);
+
+        Assert.False(Directory.Exists(workspace.DataDir));
+        // Everything else in the workspace survives.
+        Assert.True(Directory.Exists(workspace.ModsDir));
+    }
+
+    [Fact]
+    public void RefusesWhenTheWorkspaceIsTheHomeFolder()
+    {
+        // A corrupt config once reset this app's workspace root; a recursive delete
+        // aimed at a home folder is not a recoverable mistake.
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var config = new AppConfig { WorkspaceRoot = home };
+        var messages = new List<string>();
+
+        SetupService.DeleteExtractedData(config, messages.Add);
+
+        Assert.Contains(messages, m => m.StartsWith("WARNING: not deleting anything"));
+        Assert.True(Directory.Exists(home));
+    }
+
+    [Fact]
+    public void RefusesWhenTheWorkspaceIsAVolumeRoot()
+    {
+        var config = new AppConfig { WorkspaceRoot = "/" };
+        var messages = new List<string>();
+
+        SetupService.DeleteExtractedData(config, messages.Add);
+
+        Assert.Contains(messages, m => m.StartsWith("WARNING: not deleting anything"));
+        Assert.True(Directory.Exists("/"));
+    }
+
+    [Fact]
+    public void SaysSoWhenThereIsNothingExtracted()
+    {
+        var workspaceRoot = Path.Combine(_root, "empty workspace");
+        new Workspace(workspaceRoot).EnsureDirectories();
+        Directory.Delete(new Workspace(workspaceRoot).DataDir, true);
+        var messages = new List<string>();
+
+        SetupService.DeleteExtractedData(new AppConfig { WorkspaceRoot = workspaceRoot }, messages.Add);
+
+        Assert.Contains(messages, m => m.Contains("No extracted game data"));
+    }
+}
+
+public class ResetDeletionSafetyTests : IDisposable
+{
+    private readonly string _root;
+
+    public ResetDeletionSafetyTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_root);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, true); } catch { }
+    }
+
+    [Fact]
+    public void DeletingTheDataFolderDoesNotFollowASymlinkOutOfIt()
+    {
+        // Someone with a small disk could plausibly symlink the extracted data onto
+        // another drive. A recursive delete that walked through the link would take
+        // whatever is on the far side with it.
+        var precious = Path.Combine(_root, "somewhere else");
+        Directory.CreateDirectory(precious);
+        File.WriteAllText(Path.Combine(precious, "irreplaceable.txt"), "do not delete me");
+
+        var workspaceRoot = Path.Combine(_root, "KH2 Rando");
+        var workspace = new Workspace(workspaceRoot);
+        workspace.EnsureDirectories();
+        Directory.CreateSymbolicLink(Path.Combine(workspace.DataDir, "linked"), precious);
+
+        SetupService.DeleteExtractedData(new AppConfig { WorkspaceRoot = workspaceRoot }, _ => { });
+
+        Assert.False(Directory.Exists(workspace.DataDir));
+        Assert.True(Directory.Exists(precious));
+        Assert.Equal("do not delete me", File.ReadAllText(Path.Combine(precious, "irreplaceable.txt")));
+    }
+
+    [Fact]
+    public void RefusesWhenTheDataFolderIsItselfALinkPointingOutOfTheWorkspace()
+    {
+        var elsewhere = Path.Combine(_root, "elsewhere");
+        Directory.CreateDirectory(elsewhere);
+        File.WriteAllText(Path.Combine(elsewhere, "keep.txt"), "keep");
+
+        var workspaceRoot = Path.Combine(_root, "linked workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        Directory.CreateSymbolicLink(Path.Combine(workspaceRoot, "data"), elsewhere);
+
+        SetupService.DeleteExtractedData(new AppConfig { WorkspaceRoot = workspaceRoot }, _ => { });
+
+        // Whatever happens to the link, the folder it points at must survive.
+        Assert.True(Directory.Exists(elsewhere));
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(elsewhere, "keep.txt")));
+    }
+
+    [Fact]
+    public void LeavesModsAndSeedsAlone()
+    {
+        var workspaceRoot = Path.Combine(_root, "KH2 Rando");
+        var workspace = new Workspace(workspaceRoot);
+        workspace.EnsureDirectories();
+        Directory.CreateDirectory(Path.Combine(workspace.ModsDir, "kh2", "Author", "Mod"));
+        File.WriteAllText(Path.Combine(workspace.ModsDir, "kh2", "Author", "Mod", "mod.yml"), "title: X");
+        File.WriteAllText(workspace.EnabledModsFile, "Author/Mod");
+        Directory.CreateDirectory(workspace.DataDir);
+
+        SetupService.DeleteExtractedData(new AppConfig { WorkspaceRoot = workspaceRoot }, _ => { });
+
+        Assert.False(Directory.Exists(workspace.DataDir));
+        Assert.True(File.Exists(Path.Combine(workspace.ModsDir, "kh2", "Author", "Mod", "mod.yml")));
+        Assert.True(File.Exists(workspace.EnabledModsFile));
+    }
+}

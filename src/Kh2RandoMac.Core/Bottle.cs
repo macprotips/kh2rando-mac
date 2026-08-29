@@ -97,7 +97,7 @@ public class Bottle
     public static Bottle Resolve(AppConfig config)
     {
         if (config.BottleName == null)
-            throw new InvalidOperationException("Not configured yet, run setup first.");
+            throw new InvalidOperationException("Not set up yet. Click Run Setup first.");
         if (config.WrapperApp != null)
         {
             var prefix = Path.Combine(config.WrapperApp, "Contents", "SharedSupport", "prefix");

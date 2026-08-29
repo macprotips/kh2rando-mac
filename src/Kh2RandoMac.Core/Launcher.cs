@@ -25,7 +25,7 @@ public static class Launcher
         }
 
         var gameDir = config.GameDir
-            ?? throw new InvalidOperationException("Game folder not configured.");
+            ?? throw new InvalidOperationException("No game folder set. Click Run Setup first.");
 
         // Steam only starts the collection launcher, never a game inside it, so the
         // menu is unavoidable on the way in. Panacea is loaded into the launcher as
