@@ -1736,11 +1736,8 @@ public partial class MainWindow : Window
     private async void OnInstallGoa(object? sender, RoutedEventArgs e)
     {
         const string goa = "KH2FM-Mods-Num/GoA-ROM-Edition";
-        if (_workspace.IsModInstalled(goa))
-        {
-            Log("Garden of Assemblage is already installed.");
+        if (await EnableIfAlreadyInstalled(goa, "Garden of Assemblage"))
             return;
-        }
         await RunTask("Install Garden of Assemblage", () => Task.Run(() =>
         {
             var mods = new ModsService(_workspace);
@@ -1750,13 +1747,35 @@ public partial class MainWindow : Window
         }));
     }
 
+    /// <summary>
+    /// The install buttons' already-installed case. Stopping at "already installed"
+    /// left the actual intent unmet: someone clicking Install GoA with GoA sitting
+    /// unticked in the list wanted it on. Enable it and say so; only when it is
+    /// installed and already on is there truly nothing to do.
+    /// </summary>
+    private async Task<bool> EnableIfAlreadyInstalled(string modName, string title)
+    {
+        if (!_workspace.IsModInstalled(modName))
+            return false;
+        var enabled = _workspace.EnabledMods()
+            .Contains(modName, StringComparer.OrdinalIgnoreCase);
+        if (enabled)
+        {
+            Log($"{title} is already installed and enabled.");
+            return true;
+        }
+        await RunTask($"Enable {title}", () => Task.Run(() =>
+        {
+            new ModsService(_workspace).SetEnabled(modName, true);
+            Log($"{title} was already installed but switched off; it is enabled again. Click Build to apply.");
+        }));
+        return true;
+    }
+
     private async void OnInstallRefined(object? sender, RoutedEventArgs e)
     {
-        if (_workspace.IsModInstalled(RefinedService.MainMod))
-        {
-            Log("Re:Fined is already installed; tick it in the list and Build.");
+        if (await EnableIfAlreadyInstalled(RefinedService.MainMod, "Re:Fined"))
             return;
-        }
         var download = await ConfirmAsync(
             "Install Re:Fined",
             "Re:Fined adds quality-of-life features: skippable cutscenes, soft reset, " +
