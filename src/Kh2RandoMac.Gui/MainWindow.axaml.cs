@@ -977,7 +977,7 @@ public partial class MainWindow : Window
             return;
         }
         await RunSetupFor(install);
-        Log("Setup complete. Next: Extract Game Data (one time, 10-20 min).");
+        Log("Setup complete. Next: Extract Game Data (one time, a few minutes).");
     });
 
     /// <summary>
@@ -1113,7 +1113,7 @@ public partial class MainWindow : Window
         var free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
         var room = free > 0 ? $"{free / 1024 / 1024 / 1024} GB free" : "free space unknown";
         var choice = await ChooseAsync("Where should the game data go?",
-            "Extracting unpacks about 30 GB and takes 10 to 20 minutes. Choose where it is " +
+            "Extracting unpacks about 30 GB and takes a few minutes. Choose where it is " +
             "kept; it can be moved later, but moving it afterwards means shifting all of it again.",
             new List<string>
             {
@@ -1147,7 +1147,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        Log("Extracting KH2 data, this takes 10-20 minutes. Leave the app open.");
+        Log("Extracting KH2 data, usually a few minutes. Leave the app open.");
         var lastPercent = -1;
         await new ExtractionService().ExtractKh2(_config.GameDir, _config.Language, _workspace.DataDir, p =>
         {
@@ -1216,7 +1216,7 @@ public partial class MainWindow : Window
             new List<string>
             {
                 "Undo the setup\nMods, seeds, and the extracted game data are kept",
-                $"Undo the setup and delete the extracted game data{extracted}\nExtracting again takes 10 to 20 minutes",
+                $"Undo the setup and delete the extracted game data{extracted}\nExtracting again takes a few minutes",
             });
         if (choice < 0)
             return;
@@ -1227,7 +1227,7 @@ public partial class MainWindow : Window
             : "the extracted game data";
         if (deleteData && !await ConfirmAsync("Delete the extracted game data",
                 $"This deletes {whatGoes} from:\n\n" + _workspace.DataDir + "\n\n" +
-                "Nothing can be built until it has been extracted again, which takes 10 to 20 " +
+                "Nothing can be built until it has been extracted again, which takes a few " +
                 "minutes. Your mods and seeds are not touched.",
                 "Delete"))
             return;

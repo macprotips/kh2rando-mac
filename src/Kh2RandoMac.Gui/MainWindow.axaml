@@ -198,7 +198,7 @@
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
                   ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and installs the .NET runtimes the item tracker and Re:Fined need. Takes several minutes. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
-                  ToolTip.Tip="Unpacks the game's files so mods can be built against them. Takes 10 to 20 minutes and about 30 GB. Run it again after a game update."/>
+                  ToolTip.Tip="Unpacks the game's files so mods can be built against them. Takes a few minutes (longer on a slow drive) and about 30 GB. Run it again after a game update."/>
           <Border Classes="divider"/>
           <Button x:Name="UpdatesButton" Content="Check Updates" Click="OnCheckUpdates"
                   ToolTip.Tip="Updates mods installed from GitHub to their latest version."/>

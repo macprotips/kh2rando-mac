@@ -52,7 +52,7 @@ static int Help()
         Setup:
           setup                     Detect CrossOver bottle + game, create workspace, install
                                     Panacea + LuaBackend, set DLL overrides
-          extract                   Extract KH2 game data (needed once, ~10-20 min, ~30 GB)
+          extract                   Extract KH2 game data (needed once, a few minutes, ~30 GB)
           status                    Show configuration and health checks
 
         Mods:
@@ -136,7 +136,7 @@ static async Task<int> Setup()
     }
 
     await new SetupService().Run(config, install, Say);
-    Say("Setup complete. Next: 'kh2rando extract' (one-time, 10-20 min).");
+    Say("Setup complete. Next: 'kh2rando extract' (one-time, a few minutes).");
     return 0;
 }
 
@@ -199,7 +199,7 @@ static async Task<int> Extract()
     if (ExtractionService.LooksExtracted(workspace.DataDir))
         Say("Game data already extracted, re-extracting will overwrite it.");
 
-    Say($"Extracting KH2 data to {workspace.GameDataDir} (this takes 10-20 minutes)...");
+    Say($"Extracting KH2 data to {workspace.GameDataDir} (usually a few minutes)...");
     await new ExtractionService().ExtractKh2(config.GameDir!, config.Language, workspace.DataDir,
         PercentReporter(Say));
     Say("Extraction complete.");
