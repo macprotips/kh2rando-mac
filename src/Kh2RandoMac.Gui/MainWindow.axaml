@@ -3,7 +3,7 @@
         x:Class="Kh2RandoMac.Gui.MainWindow"
         Title="KH2 Rando Manager"
         Width="1180" Height="800"
-        MinWidth="960" MinHeight="600">
+        MinWidth="960" MinHeight="720">
 
   <Window.Styles>
     <!-- Hairline between button groups, so related controls read as a set. -->
@@ -40,7 +40,20 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="20">
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>                <!-- status header -->
+      <RowDefinition Height="Auto"/>                <!-- install row -->
+      <RowDefinition Height="Auto"/>                <!-- load order label -->
+      <!-- The mod list is what the window is for, so it takes the slack and keeps a
+           floor: shrinking the window used to come out of it alone, because the log
+           below held a fixed height and gave nothing back. -->
+      <RowDefinition Height="*" MinHeight="150"/>   <!-- mod list -->
+      <RowDefinition Height="Auto"/>                <!-- splitter -->
+      <RowDefinition Height="150" MinHeight="64"/>  <!-- log, dragged by the splitter -->
+      <RowDefinition Height="Auto"/>                <!-- build actions -->
+      <RowDefinition Height="Auto"/>                <!-- version -->
+    </Grid.RowDefinitions>
 
     <!-- Status header: what the app knows, plus the setup and upkeep actions -->
     <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="20,18" Margin="0,0,0,16">
@@ -232,7 +245,7 @@
     </Border>
 
     <!-- Action row, grouped: game settings, external tools, then the primary build actions -->
-    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right"
+    <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right"
                 Spacing="7" Margin="0,16,0,16">
       <Button x:Name="HudButton" Content="FPS HUD: Off" Padding="14,8"
               Click="OnToggleHud"
@@ -259,7 +272,17 @@
     <!-- Log, with a progress strip above it while something is running. Setup pulls
          down a few hundred MB and runs installers inside the bottle; without this the
          window looks frozen for minutes at a time. -->
-    <Border Grid.Row="5" Background="#181818" CornerRadius="8" Padding="8" Height="146">
+    <!-- Drag to trade space between the list and the log. The bar is the visible part
+         and the splitter over it is the wider target, since a three-pixel line is
+         something you hunt for rather than grab. -->
+    <Border Grid.Row="4" Height="3" Width="52" CornerRadius="2" Background="#2EFFFFFF"
+            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <GridSplitter Grid.Row="4" Height="11" Background="Transparent"
+                  HorizontalAlignment="Stretch" ResizeDirection="Rows"
+                  ResizeBehavior="PreviousAndNext"
+                  ToolTip.Tip="Drag to make the mod list or the log taller."/>
+
+    <Border Grid.Row="5" Background="#181818" CornerRadius="8" Padding="8">
       <Grid RowDefinitions="Auto,*">
         <Grid x:Name="ProgressRow" ColumnDefinitions="*,Auto" IsVisible="False" Margin="0,1,0,8">
           <StackPanel Spacing="5">
@@ -278,7 +301,7 @@
       </Grid>
     </Border>
 
-    <TextBlock x:Name="VersionText" Grid.Row="6" HorizontalAlignment="Right"
+    <TextBlock x:Name="VersionText" Grid.Row="7" HorizontalAlignment="Right"
                Margin="0,6,2,0" FontSize="11" Opacity="0.4"/>
   </Grid>
 </Window>
