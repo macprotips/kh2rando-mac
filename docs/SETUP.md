@@ -96,6 +96,9 @@ next.
      Folder button beside "Game" switches copies later.
 3. Click Extract Game Data. This unpacks the game's files so mods can be built
    against them. One time only, 10 to 20 minutes, about 30 GB. Leave the app open.
+   - That 30 GB goes in the folder named on the "Files" row, `~/KH2 Rando` by
+     default. If your Mac has less spare space than that, use Change Folder beside
+     it first and put it on the drive the game is on.
 
 Checkpoint: the status panel shows green checks against Mod loader ("Panacea and
 LuaBackend installed.") and Game data ("Extracted.").

@@ -18,6 +18,11 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- A Files row in the header shows where mods, the extracted game data and the built
+  mods are kept, with a button to move them. The extraction alone is about 30 GB and
+  the location was fixed at the home folder, which is the wrong disk on a Mac whose
+  spare space is smaller than the game. Moving within one disk is a rename and is
+  instant; across disks it copies first and only then removes the old copy
 - A mod with a confirmed problem says so on its own row in the list, not only in
   the log at build time. The warning about a mod that freezes the game was printed
   on three consecutive builds and went unread, being one line among forty

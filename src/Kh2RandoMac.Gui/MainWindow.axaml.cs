@@ -553,6 +553,7 @@ public partial class MainWindow : Window
             // runs, a stray click mid-setup or mid-build must not race the worker.
             SetupButton.IsEnabled = !busy;
             ChangeGameButton.IsEnabled = !busy;
+            ChangeWorkspaceButton.IsEnabled = !busy;
             // Both pickers start real work, so they belong with the buttons rather than
             // staying live for a click that would only be refused.
             BottlePicker.IsEnabled = !busy;
@@ -694,6 +695,7 @@ public partial class MainWindow : Window
         PaintStatusRow(LoaderStatusBadge, LoaderStatusIcon, LoaderStatusText, status.Loader);
         PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
         RefreshBottlePicker(status.Bottles);
+        WorkspaceText.Text = _config.WorkspaceRoot;
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
@@ -790,6 +792,58 @@ public partial class MainWindow : Window
         await RunSetupFor(install);
         Log("Setup complete. Next: Extract Game Data (one time, 10-20 min).");
     });
+
+    /// <summary>
+    /// Move where mods, the extracted data and the build are kept. The extraction alone
+    /// is about 30 GB, and the Macs this runs on often have less spare than that, so
+    /// this has to be changeable rather than fixed at the home folder.
+    /// </summary>
+    private async void OnChangeWorkspace(object? sender, RoutedEventArgs e)
+    {
+        if (_busy)
+            return;
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Choose where to keep KH2 Rando's files",
+            AllowMultiple = false,
+        });
+        var chosen = picked.FirstOrDefault()?.Path.LocalPath;
+        if (chosen == null)
+            return;
+
+        // Keep everything inside a named folder rather than scattering it across whatever
+        // was picked, unless they picked such a folder already.
+        var target = string.Equals(Path.GetFileName(chosen.TrimEnd('/')), "KH2 Rando", StringComparison.Ordinal)
+            ? chosen
+            : Path.Combine(chosen, "KH2 Rando");
+        var current = _config.WorkspaceRoot;
+        if (string.Equals(Path.GetFullPath(target), Path.GetFullPath(current), StringComparison.Ordinal))
+        {
+            Log("That is already where the files are.");
+            return;
+        }
+
+        var (size, sameVolume) = await Task.Run(() =>
+            (WorkspaceMover.SizeOnDisk(current), WorkspaceMover.SameVolume(current, target)));
+        var gb = size / 1024 / 1024 / 1024;
+        var effort = sameVolume
+            ? "Both are on the same disk, so moving is a rename and is immediate."
+            : $"They are on different disks, so about {gb} GB has to be copied. That takes a while, " +
+              "and the old copy is only removed once the new one is complete.";
+
+        if (!await ConfirmAsync("Move the KH2 Rando files",
+                $"Everything moves from:\n{current}\n\nto:\n{target}\n\n{effort}", "Move"))
+            return;
+
+        await RunTask("Move files", () => Task.Run(() =>
+        {
+            WorkspaceMover.Move(current, target, Log);
+            var config = AppConfig.Load();
+            config.WorkspaceRoot = target;
+            config.Save();
+            Log($"Files now kept in {target}.");
+        }));
+    }
 
     private async void OnChangeGameFolder(object? sender, RoutedEventArgs e) =>
         await RunTask("Change game folder", async () =>
