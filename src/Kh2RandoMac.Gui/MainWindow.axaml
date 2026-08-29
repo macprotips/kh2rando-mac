@@ -37,13 +37,13 @@
 
     <!-- Status header: what the app knows, plus the setup and upkeep actions -->
     <Border Grid.Row="0" Background="#22FFFFFF" CornerRadius="10" Padding="20,18" Margin="0,0,0,16">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Grid.Column="0" Spacing="13" Margin="0,0,24,0">
+      <StackPanel Spacing="13">
+        <StackPanel Spacing="11">
           <!-- Trailing Auto column is local to this row; the badge and label columns
                match the rows below so the left edges still line up. -->
-          <Grid ColumnDefinitions="Auto,96,*,Auto">
+          <Grid ColumnDefinitions="30,96,*,Auto">
             <Border x:Name="GameStatusBadge" Width="20" Height="20" CornerRadius="10"
-                    Margin="0,0,10,0" VerticalAlignment="Top">
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
               <TextBlock x:Name="GameStatusIcon" FontSize="11" FontWeight="Bold"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
@@ -59,9 +59,9 @@
                     Margin="12,0,0,0" VerticalAlignment="Top"
                     ToolTip.Tip="Point the app at a different copy of the game, then set up the mod loader in it. Quit Steam and the game first."/>
           </Grid>
-          <Grid ColumnDefinitions="Auto,96,*">
+          <Grid ColumnDefinitions="30,96,*">
             <Border x:Name="LoaderStatusBadge" Width="20" Height="20" CornerRadius="10"
-                    Margin="0,0,10,0" VerticalAlignment="Top">
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
               <TextBlock x:Name="LoaderStatusIcon" FontSize="11" FontWeight="Bold"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
@@ -69,9 +69,9 @@
                        VerticalAlignment="Top" Margin="0,1,0,0"/>
             <TextBlock Grid.Column="2" x:Name="LoaderStatusText" FontSize="13" TextWrapping="Wrap"/>
           </Grid>
-          <Grid ColumnDefinitions="Auto,96,*">
+          <Grid ColumnDefinitions="30,96,*">
             <Border x:Name="DataStatusBadge" Width="20" Height="20" CornerRadius="10"
-                    Margin="0,0,10,0" VerticalAlignment="Top">
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
               <TextBlock x:Name="DataStatusIcon" FontSize="11" FontWeight="Bold"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
@@ -99,6 +99,7 @@
             <TextBlock Grid.Column="1" Text="Bottle" FontSize="13" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
             <ComboBox Grid.Column="2" x:Name="BottlePicker" FontSize="12"
+                      HorizontalAlignment="Left" MinWidth="240"
                       ToolTip.Tip="Which CrossOver bottle the game is modded in. Pick another to move it there; that bottle gets its own mod loader and runtimes, which takes a few minutes. Make bottles in CrossOver."/>
           </Grid>
           <!-- Only shown when more than one CrossOver is installed; they share bottles,
@@ -109,13 +110,19 @@
             <TextBlock Grid.Column="1" Text="CrossOver" FontSize="13" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
             <ComboBox Grid.Column="2" x:Name="CrossOverPicker" FontSize="12"
+                      HorizontalAlignment="Left" MinWidth="240"
                       ToolTip.Tip="You have more than one CrossOver installed and they share bottles. The app picks the right one for your bottle; change it here if you want a specific copy."/>
           </Grid>
         </StackPanel>
 
-        <!-- Grouped left to right: one-time setup, upkeep, then diagnostics and the
+        <Border Height="1" Background="#1AFFFFFF" Margin="0,3,0,0"/>
+
+        <!-- Their own row rather than a column beside the status: as a column they were
+             centred against the block as a whole, so they lined up with whichever row
+             happened to be in the middle, and they took the width the paths needed.
+             Grouped left to right: one-time setup, upkeep, then diagnostics and the
              destructive action furthest from everything else. -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Left">
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
                   ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and installs the .NET runtimes the item tracker and Re:Fined need. Takes several minutes. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
@@ -131,7 +138,7 @@
           <Button x:Name="ResetButton" Classes="destructive" Content="Reset…" Click="OnReset"
                   ToolTip.Tip="Returns the game to vanilla: removes Panacea, LuaBackend, and the bottle changes. Mods and extracted data are kept. Click twice to confirm."/>
         </StackPanel>
-      </Grid>
+      </StackPanel>
     </Border>
 
     <!-- Install row: type-anything installs on the left, curated one-click installs on the right -->
