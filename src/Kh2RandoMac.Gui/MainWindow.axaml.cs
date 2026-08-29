@@ -698,7 +698,14 @@ public partial class MainWindow : Window
         WorkspaceText.Text = _config.WorkspaceRoot;
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
+        // Movies on means the game dies at the next cutscene, so the button says so
+        // rather than reading as an ordinary toggle someone has left in either position.
+        var moviesOn = status.MoviesSkipped == false;
         MoviesButton.Content = status.MoviesSkipped == true ? "Movies: Skipped" : "Movies: On";
+        MoviesButton.Classes.Set("warning", moviesOn);
+        ToolTip.SetTip(MoviesButton, moviesOn
+            ? "Movies are on, and cutscenes crash the game under CrossOver. Click to skip them."
+            : "Cutscenes are skipped, which is what stops them crashing the game. Click to put them back.");
         MoviesButton.IsEnabled = status.MoviesSkipped != null && !_busy;
         HudButton.Content = status.HudEnabled == true ? "FPS HUD: On" : "FPS HUD: Off";
         HudButton.IsEnabled = status.HudEnabled != null && !_busy;

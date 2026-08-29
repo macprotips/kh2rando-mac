@@ -23,6 +23,13 @@
       <Setter Property="Background" Value="#22FFFFFF"/>
     </Style>
     <!-- Destructive actions get a warm tint so they are never confused with routine ones. -->
+    <!-- For a setting that is currently wrong in a way that costs someone their run,
+         rather than merely being off. -->
+    <Style Selector="Button.warning">
+      <Setter Property="Foreground" Value="#FFB454"/>
+      <Setter Property="BorderBrush" Value="#66FFB454"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
     <Style Selector="Button.destructive">
       <Setter Property="Foreground" Value="#FF8A80"/>
     </Style>
@@ -122,7 +129,7 @@
              happened to be in the middle, and they took the width the paths needed.
              Grouped left to right: one-time setup, upkeep, then diagnostics and the
              destructive action furthest from everything else. -->
-        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Left">
+        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
                   ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and installs the .NET runtimes the item tracker and Re:Fined need. Takes several minutes. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
