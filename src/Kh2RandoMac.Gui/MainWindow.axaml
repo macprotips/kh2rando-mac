@@ -198,7 +198,7 @@
                             ToolTip.Tip="Enabled mods are included in the next build."/>
                   <StackPanel Grid.Column="1" Margin="10,0" Spacing="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding Name}" FontSize="11" Opacity="0.6"/>
+                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.6"/>
                     <!-- Confirmed problems belong on the row, where they are read before
                          building, not only in the log afterwards. -->
                     <TextBlock Text="{Binding Issue}" IsVisible="{Binding HasIssue}"

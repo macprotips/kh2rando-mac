@@ -23,6 +23,12 @@ public class ModRow : INotifyPropertyChanged
 
     public bool HasIssue => Issue != null;
 
+    /// <summary>Disk size, shown beside the mod's name; blank when it could not be read.</summary>
+    public string? Size { get; init; }
+
+    /// <summary>The dim second line: "author/repo" plus the size when there is one.</summary>
+    public string Subtitle => string.IsNullOrEmpty(Size) ? Name : $"{Name}  ·  {Size}";
+
     private bool _enabled;
     public bool Enabled
     {
@@ -515,6 +521,35 @@ public partial class MainWindow : Window
         });
     }
 
+    private bool _measuringWorkspace;
+
+    /// <summary>
+    /// Fill the workspace size in afterwards. Measuring tens of thousands of extracted
+    /// files takes a second or two, and this repaint runs after every operation, so the
+    /// row shows the path at once and gains the size when it arrives. One at a time:
+    /// several refreshes in quick succession should not start several passes over
+    /// 50-odd GB.
+    /// </summary>
+    private void MeasureWorkspaceInBackground()
+    {
+        if (_measuringWorkspace)
+            return;
+        _measuringWorkspace = true;
+        var root = _workspace.Root;
+        _ = Task.Run(() =>
+        {
+            var size = DiskUsage.Of(root);
+            Dispatcher.UIThread.Post(() =>
+            {
+                _measuringWorkspace = false;
+                // The folder may have been moved while this was running.
+                if (_workspace.Root != root)
+                    return;
+                WorkspaceText.Text = size > 0 ? $"{root}   ·   {DiskUsage.Human(size)}" : root;
+            });
+        });
+    }
+
     private static long Mb(long bytes) => bytes / 1024 / 1024;
 
     /// <summary>
@@ -629,7 +664,8 @@ public partial class MainWindow : Window
 
     private record StatusSnapshot(
         StatusRow Game, string? GamePath, StatusRow Loader, StatusRow Data, List<ModInfo> Mods,
-        bool? MoviesSkipped, bool? HudEnabled, List<Bottle> Bottles);
+        bool? MoviesSkipped, bool? HudEnabled, List<Bottle> Bottles,
+        Dictionary<string, long> ModSizes);
 
     /// <summary>Gathers state off the UI thread (filesystem scans can block on slow drives), then paints.</summary>
     private async Task RefreshAllAsync()
@@ -670,6 +706,9 @@ public partial class MainWindow : Window
                     : StatusRow.Ok("Extracted.");
 
             var mods = new ModsService(workspace).List();
+            // One du call for the whole list; twenty processes to answer one question
+            // would cost twenty times as much on every refresh.
+            var modSizes = DiskUsage.Of(mods.Select(m => m.Path).ToList());
             bool? moviesSkipped = null;
             if (gameOk)
             {
@@ -684,7 +723,7 @@ public partial class MainWindow : Window
             try { bottles = Bottle.Discover(); } catch { bottles = new List<Bottle>(); }
 
             return (config, workspace, new StatusSnapshot(gameRow, config.GameDir, loaderRow, dataRow, mods,
-                moviesSkipped, hudEnabled, bottles));
+                moviesSkipped, hudEnabled, bottles, modSizes));
         });
 
         _config = snapshot.config;
@@ -696,6 +735,7 @@ public partial class MainWindow : Window
         PaintStatusRow(DataStatusBadge, DataStatusIcon, DataStatusText, status.Data);
         RefreshBottlePicker(status.Bottles);
         WorkspaceText.Text = _config.WorkspaceRoot;
+        MeasureWorkspaceInBackground();
         GamePathText.Text = status.GamePath ?? "";
         GamePathText.IsVisible = status.GamePath != null;
         // Movies on means the game dies at the next cutscene, so the button says so
@@ -723,6 +763,9 @@ public partial class MainWindow : Window
                 Title = mod.Metadata?.Title ?? mod.Name,
                 Enabled = mod.Enabled,
                 Issue = KnownIssues.For(mod.Name),
+                Size = status.ModSizes.TryGetValue(mod.Path, out var bytes)
+                    ? DiskUsage.Human(bytes)
+                    : null,
             };
             row.EnabledChanged = SaveModOrder;
             _mods.Add(row);
