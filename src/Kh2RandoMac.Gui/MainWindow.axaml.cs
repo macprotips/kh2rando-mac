@@ -14,6 +14,15 @@ public class ModRow : INotifyPropertyChanged
     public required string Name { get; init; }
     public required string Title { get; init; }
 
+    /// <summary>
+    /// A confirmed problem with this mod, shown on its row. A warning only at build
+    /// time scrolls past among forty other lines: this app warned one user about a
+    /// game-freezing mod on three consecutive builds and they never saw it.
+    /// </summary>
+    public string? Issue { get; init; }
+
+    public bool HasIssue => Issue != null;
+
     private bool _enabled;
     public bool Enabled
     {
@@ -704,6 +713,7 @@ public partial class MainWindow : Window
                 Name = mod.Name,
                 Title = mod.Metadata?.Title ?? mod.Name,
                 Enabled = mod.Enabled,
+                Issue = KnownIssues.For(mod.Name),
             };
             row.EnabledChanged = SaveModOrder;
             _mods.Add(row);

@@ -18,6 +18,9 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- A mod with a confirmed problem says so on its own row in the list, not only in
+  the log at build time. The warning about a mod that freezes the game was printed
+  on three consecutive builds and went unread, being one line among forty
 - The item tracker no longer stops responding after being open a while. Its output
   was piped through this app, and those pipes were read only while this window was
   open; once it closed the pipe filled and the tracker blocked mid-write, still
