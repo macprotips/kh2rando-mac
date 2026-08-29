@@ -60,6 +60,15 @@ public class Workspace
     public List<string> InstalledMods() => ScanMods(ModsDir);
 
     /// <summary>
+    /// Whether a mod is really installed, which means it has a mod.yml and not merely a
+    /// folder. An interrupted download leaves the folder behind with nothing usable in
+    /// it; treating that as installed blocks the retry and hides the mod from the list
+    /// at the same time, which is a corner nobody can get out of from the interface.
+    /// </summary>
+    public bool IsModInstalled(string modName) =>
+        File.Exists(Path.Combine(ModPath(modName), "mod.yml"));
+
+    /// <summary>
     /// Mod names found under any mods directory, laid out as &lt;name&gt; or
     /// &lt;author&gt;/&lt;repo&gt;. Shared so an exported folder can be read the same way
     /// as the live one.

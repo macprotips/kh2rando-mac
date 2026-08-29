@@ -437,7 +437,7 @@ public partial class MainWindow : Window
             case FolderKind.Export:
             {
                 var mods = ImportService.Preview(folder);
-                var clashes = mods.Count(m => Directory.Exists(_workspace.ModPath(m)));
+                var clashes = mods.Count(m => _workspace.IsModInstalled(m));
                 var hasOrder = File.Exists(Path.Combine(folder, ExportService.OrderFileName));
                 var message =
                     $"This folder holds {mods.Count} mod(s)." +
@@ -1393,7 +1393,7 @@ public partial class MainWindow : Window
     private async void OnInstallGoa(object? sender, RoutedEventArgs e)
     {
         const string goa = "KH2FM-Mods-Num/GoA-ROM-Edition";
-        if (Directory.Exists(_workspace.ModPath(goa)))
+        if (_workspace.IsModInstalled(goa))
         {
             Log("Garden of Assemblage is already installed.");
             return;
@@ -1409,7 +1409,7 @@ public partial class MainWindow : Window
 
     private async void OnInstallRefined(object? sender, RoutedEventArgs e)
     {
-        if (Directory.Exists(_workspace.ModPath(RefinedService.MainMod)))
+        if (_workspace.IsModInstalled(RefinedService.MainMod))
         {
             Log("Re:Fined is already installed; tick it in the list and Build.");
             return;

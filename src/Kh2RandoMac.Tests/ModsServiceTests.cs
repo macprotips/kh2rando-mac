@@ -247,3 +247,72 @@ public class ModOrderTests : IDisposable
         Assert.Equal(new[] { "alpha", "beta", "gamma" }, _workspace.EnabledMods());
     }
 }
+
+public class UnfinishedDownloadTests : IDisposable
+{
+    private readonly string _root;
+    private readonly Workspace _workspace;
+
+    public UnfinishedDownloadTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        _workspace = new Workspace(_root);
+        _workspace.EnsureDirectories();
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, true); } catch { }
+    }
+
+    /// <summary>What the app quitting mid-clone leaves: a folder holding only .git.</summary>
+    private string MakeStub(string repo)
+    {
+        var path = _workspace.ModPath(repo);
+        Directory.CreateDirectory(Path.Combine(path, ".git"));
+        return path;
+    }
+
+    [Fact]
+    public void IsModInstalled_IsFalseForTheWreckageOfAnUnfinishedDownload()
+    {
+        MakeStub("KH-ReFined/KH2-MAIN");
+        Assert.False(_workspace.IsModInstalled("KH-ReFined/KH2-MAIN"));
+    }
+
+    [Fact]
+    public void IsModInstalled_IsTrueOnceThereIsAModYml()
+    {
+        var path = MakeStub("KH-ReFined/KH2-MAIN");
+        File.WriteAllText(Path.Combine(path, "mod.yml"), "title: Re:Fined\nassets: []\n");
+        Assert.True(_workspace.IsModInstalled("KH-ReFined/KH2-MAIN"));
+    }
+
+    [Fact]
+    public void InstallFromGit_RefusesOnlyWhenTheModIsReallyThere()
+    {
+        var path = _workspace.ModPath("Some/Mod");
+        Directory.CreateDirectory(path);
+        File.WriteAllText(Path.Combine(path, "mod.yml"), "title: X\nassets: []\n");
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => new ModsService(_workspace).InstallFromGit("Some/Mod"));
+        Assert.Contains("already installed", ex.Message);
+    }
+
+    [Fact]
+    public void InstallFromGit_ClearsAnUnfinishedDownloadInsteadOfRefusing()
+    {
+        MakeStub("Some/Mod");
+        var messages = new List<string>();
+
+        // The clone itself will fail (no such repo), but only after the stub is gone:
+        // the old code never got that far, refusing on the folder's existence alone.
+        Assert.ThrowsAny<Exception>(
+            () => new ModsService(_workspace).InstallFromGit("Some/Mod", messages.Add));
+
+        Assert.Contains(messages, m => m.Contains("unfinished earlier download"));
+        Assert.DoesNotContain(messages, m => m.Contains("already installed"));
+        Assert.False(Directory.Exists(_workspace.ModPath("Some/Mod")));
+    }
+}

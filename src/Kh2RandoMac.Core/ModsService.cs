@@ -34,11 +34,29 @@ public class ModsService
 
         var modPath = _workspace.ModPath(repo);
         if (Directory.Exists(modPath))
-            throw new InvalidOperationException($"Mod '{repo}' is already installed. Remove it first to reinstall.");
+        {
+            if (File.Exists(Path.Combine(modPath, "mod.yml")))
+                throw new InvalidOperationException($"Mod '{repo}' is already installed. Remove it first to reinstall.");
+            // A folder with no mod.yml is what a download that never finished leaves
+            // behind, and the app quitting mid-clone is enough to produce one. Treating
+            // it as an install made the mod impossible to install and impossible to see,
+            // with no way out from the interface.
+            progress?.Invoke($"Clearing an unfinished earlier download of {repo}...");
+            Directory.Delete(modPath, true);
+        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(modPath)!);
         progress?.Invoke($"Cloning https://github.com/{repo} ...");
-        Repository.Clone($"https://github.com/{repo}.git", modPath, new CloneOptions { RecurseSubmodules = true });
+        try
+        {
+            Repository.Clone($"https://github.com/{repo}.git", modPath, new CloneOptions { RecurseSubmodules = true });
+        }
+        catch
+        {
+            // Do not leave the half-clone behind to block the next attempt.
+            try { if (Directory.Exists(modPath)) Directory.Delete(modPath, true); } catch { }
+            throw;
+        }
 
         if (!File.Exists(Path.Combine(modPath, "mod.yml")))
         {
