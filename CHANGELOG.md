@@ -18,6 +18,9 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- Only one copy of the app runs at a time. Two sharing one settings file, mod
+  folder and bottle do not coordinate, and an older copy left on the Desktop after
+  an update is the easy way into that. A second copy now says so and closes
 - The window is drawn on the CPU instead of through OpenGL. The GPU path crashed
   with a null dereference while tearing down a rendering session, seconds after
   Build & Run handed the screen to the game. Nothing here is more than text, a list

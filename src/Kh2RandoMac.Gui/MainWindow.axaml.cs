@@ -84,13 +84,34 @@ public partial class MainWindow : Window
             await InstallFilesAsync(paths);
         });
 
+        // Claimed before anything reads or writes the workspace; the notice on Opened
+        // shuts this copy down again if another already holds it.
+        _otherInstancePid = SingleInstance.OtherInstancePid();
+        if (_otherInstancePid == null)
+        {
+            SingleInstance.Claim();
+            Closed += (_, _) => SingleInstance.Release();
+        }
+
         SetUpBottlePicker();
         SetUpCrossOverPicker();
         _ = RefreshAllAsync();
 
-        // Shown once, after the window is up so it has something to sit over.
-        if (!_config.NoticeShown)
-            Opened += async (_, _) => await ShowFirstRunNotice();
+        Opened += async (_, _) =>
+        {
+            if (_otherInstancePid != null)
+            {
+                await NoticeAsync("Already running",
+                    "Another copy of KH2 Rando Manager is open, and two copies sharing one " +
+                    "settings file and mod folder is how settings get lost.\n\n" +
+                    "This window will close. Use the one already open, and delete any older " +
+                    "copies of the app you have kept.");
+                Close();
+                return;
+            }
+            if (!_config.NoticeShown)
+                await ShowFirstRunNotice();
+        };
     }
 
     /// <summary>
@@ -1076,6 +1097,7 @@ public partial class MainWindow : Window
         }
     }
 
+    private int? _otherInstancePid;
     private bool _switchingBottle;
     private List<Bottle> _bottles = new();
     private bool _trackerLaunching;

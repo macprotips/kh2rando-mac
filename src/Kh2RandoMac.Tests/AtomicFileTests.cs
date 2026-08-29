@@ -69,3 +69,90 @@ public class AtomicFileTests : IDisposable
         Assert.Equal("{}", File.ReadAllText(path));
     }
 }
+
+/// <summary>
+/// Updating means replacing the .app while the settings and workspace stay where they
+/// are, so a new build has to read what an older one wrote, and an older build has to
+/// survive what a newer one wrote.
+/// </summary>
+public class UpgradeCompatibilityTests : IDisposable
+{
+    private readonly string _dir;
+
+    public UpgradeCompatibilityTests()
+    {
+        _dir = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_dir);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_dir, true); } catch { }
+    }
+
+    private string Write(string json)
+    {
+        var path = Path.Combine(_dir, "config.json");
+        File.WriteAllText(path, json);
+        return path;
+    }
+
+    [Fact]
+    public void ReadsAConfigFromAnOlderBuildThatLacksNewerFields()
+    {
+        // The shape 0.1.0 wrote: no CrossOverAppPath, no NoticeShown, no Language.
+        var path = Write("""
+            {
+              "BottleName": "KH2",
+              "GameDir": "/Volumes/MPT/game",
+              "Launcher": "Steam",
+              "WorkspaceRoot": "/Users/someone/KH2 Rando"
+            }
+            """);
+
+        var config = AppConfig.Load(path);
+        Assert.Equal("KH2", config.BottleName);
+        Assert.Equal("/Volumes/MPT/game", config.GameDir);
+        Assert.Equal("Steam", config.Launcher);
+        Assert.Null(config.CrossOverAppPath);
+        Assert.False(config.NoticeShown);
+    }
+
+    [Fact]
+    public void IgnoresFieldsAFutureBuildMightAdd()
+    {
+        // Someone running an older build after a newer one must not lose their setup.
+        var path = Write("""
+            {
+              "BottleName": "KH2",
+              "GameDir": "/Volumes/MPT/game",
+              "Launcher": "Steam",
+              "SomethingAddedLater": {"nested": true}
+            }
+            """);
+
+        var config = AppConfig.Load(path);
+        Assert.Equal("KH2", config.BottleName);
+        Assert.Equal("/Volumes/MPT/game", config.GameDir);
+    }
+
+    [Fact]
+    public void SettingsSurviveASaveAndReload()
+    {
+        var path = Path.Combine(_dir, "config.json");
+        new AppConfig
+        {
+            BottleName = "KH2",
+            GameDir = "/Volumes/MPT/game",
+            Launcher = "EGS",
+            NoticeShown = true,
+            CrossOverAppPath = "/Applications/CrossOver.app",
+        }.Save(path);
+
+        var reloaded = AppConfig.Load(path);
+        Assert.Equal("KH2", reloaded.BottleName);
+        Assert.Equal("EGS", reloaded.Launcher);
+        Assert.True(reloaded.NoticeShown);
+        Assert.Equal("/Applications/CrossOver.app", reloaded.CrossOverAppPath);
+    }
+}
