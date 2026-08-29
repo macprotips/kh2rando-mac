@@ -6,6 +6,12 @@ Everything from 0.3.2, which was built but never published.
 
 ### Added
 
+- **The app notices when the game is pointed at mods that have moved** — the "my
+  mods stopped working after I moved my folders" trap. The Mod loader row says
+  which recorded path is stale, Build warns again before you play, and Run Setup
+  fixes it. Moving the files from inside the app re-points the game by itself.
+- **Reset can also delete the extracted game data**, offered as a choice with the
+  real size shown and a second confirmation. Mods and seeds are never touched.
 - **Build & Run goes straight into KH2**, instead of leaving you on the collection's
   game-select menu.
 - **Bottle picker.** Choose which CrossOver bottle the game is modded in. Switching
@@ -48,7 +54,8 @@ Everything from 0.3.2, which was built but never published.
   marked, since cutscenes crash the game under CrossOver.
 - The seed generator installs alongside everything else in the files folder, and has
   a sharper icon.
-- Status header laid out in rows, with the paths given full width.
+- Status header laid out in rows, with the paths given full width. The
+  change-folder buttons are small folder icons beside the paths they act on.
 - The mod list and the log can be resized against each other, and the window remembers
   its size and that split between launches. The log previously held a fixed height, so
   shrinking the window came out of the mod list alone.
