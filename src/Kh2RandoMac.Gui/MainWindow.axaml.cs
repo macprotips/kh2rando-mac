@@ -67,7 +67,10 @@ public partial class MainWindow : Window
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, (_, e) =>
         {
-            e.DragEffects = e.Data.Contains(DataFormats.Files)
+            // Refuse the drag outright while an operation runs, so the pointer says no
+            // on the way in. Accepting it and then declining leaves someone believing
+            // they dropped mods in that were never installed.
+            e.DragEffects = !_busy && e.Data.Contains(DataFormats.Files)
                 ? DragDropEffects.Copy
                 : DragDropEffects.None;
         });
@@ -361,6 +364,18 @@ public partial class MainWindow : Window
     /// <summary>Install dropped/opened mods, seeds, or folders (window drop and dock-icon drop both land here).</summary>
     public async Task InstallFilesAsync(IReadOnlyList<string> paths)
     {
+        // Dropping on the window is refused by the drag itself, but a drop on the dock
+        // icon arrives here directly. Either way this has to say so: a line in the log
+        // is not enough for something someone physically did and expects to see happen.
+        if (_busy)
+        {
+            var what = paths.Count == 1 ? "That file was" : $"Those {paths.Count} items were";
+            await NoticeAsync("Busy with something else",
+                $"{what} not installed. The app is part way through another operation and " +
+                "will not start a second one.\n\nDrop them again once it has finished.");
+            return;
+        }
+
         // Folders are handled first: an exported setup or a single mod folder.
         var folders = paths.Where(Directory.Exists).ToList();
         if (folders.Count > 0)
