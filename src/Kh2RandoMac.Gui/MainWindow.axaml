@@ -127,9 +127,11 @@
         <!-- Their own row rather than a column beside the status: as a column they were
              centred against the block as a whole, so they lined up with whichever row
              happened to be in the middle, and they took the width the paths needed.
+             Right-aligned to match the row of actions above the log, so both sets of
+             buttons sit on one edge rather than each finding their own.
              Grouped left to right: one-time setup, upkeep, then diagnostics and the
              destructive action furthest from everything else. -->
-        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Right">
           <Button x:Name="SetupButton" Content="Run Setup" Click="OnSetup"
                   ToolTip.Tip="Finds your game, installs Panacea and LuaBackend, configures the bottle, and installs the .NET runtimes the item tracker and Re:Fined need. Takes several minutes. Quit Steam and the game first."/>
           <Button x:Name="ExtractButton" Content="Extract Game Data" Click="OnExtract"
