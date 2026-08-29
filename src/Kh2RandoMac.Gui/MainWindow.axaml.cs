@@ -914,28 +914,28 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("Run Setup first.");
         if (!GameLocator.IsGameDir(_config.GameDir))
             throw new InvalidOperationException("Game folder not reachable, is the drive plugged in?");
-        // The first extraction is the moment the folder starts mattering: before it,
-        // moving costs nothing, and afterwards it means shifting 30 GB. So the choice is
-        // put to people here rather than left to be discovered later.
+        // Asked every time, not just the first. This writes 30 GB and runs for twenty
+        // minutes, so it is worth a deliberate start, and a re-extraction after a game
+        // update is exactly when someone might want it on a different disk.
         const long needed = 32L * 1024 * 1024 * 1024;
         var free = await Task.Run(() => WorkspaceMover.FreeSpace(_workspace.Root));
-        if (!ExtractionService.LooksExtracted(_workspace.DataDir))
-        {
-            var room = free > 0 ? $"{free / 1024 / 1024 / 1024} GB free" : "free space unknown";
-            var choice = await ChooseAsync("Where should the game data go?",
-                "Extracting unpacks about 30 GB. Choose where it is kept; it can be moved " +
-                "later, but moving it afterwards means shifting all of it again.",
-                new List<string>
-                {
-                    $"{_workspace.Root}\n{room}",
-                    "Choose another folder\u2026",
-                });
-            if (choice < 0)
+        var room = free > 0 ? $"{free / 1024 / 1024 / 1024} GB free" : "free space unknown";
+        var choice = await ChooseAsync("Where should the game data go?",
+            "Extracting unpacks about 30 GB and takes 10 to 20 minutes. Choose where it is " +
+            "kept; it can be moved later, but moving it afterwards means shifting all of it again.",
+            new List<string>
             {
-                Log("Extraction cancelled.");
-                return;
-            }
-            if (choice == 1 && !await PickAndMoveWorkspaceAsync())
+                $"{_workspace.Root}\n{room}",
+                "Choose another folder\u2026",
+            });
+        if (choice < 0)
+        {
+            Log("Extraction cancelled.");
+            return;
+        }
+        if (choice == 1)
+        {
+            if (!await PickAndMoveWorkspaceAsync())
             {
                 Log("Extraction cancelled, the files were left where they were.");
                 return;

@@ -18,9 +18,10 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
-- The first extraction asks where the game data should go, before writing any of
-  it. Moving the folder beforehand costs nothing; moving it afterwards means
-  shifting 30 GB again, so the choice belongs at that moment
+- Extract asks where the game data should go before writing any of it, every time.
+  It unpacks 30 GB over twenty minutes, so it is worth starting deliberately, and a
+  re-extraction after a game update is exactly when someone might want it on a
+  different disk
 - Extraction refuses when there is not room for it, naming the folder and the
   button that moves it, rather than filling the disk and failing part way
 - The seed generator installs beside the tracker in that same folder. It was the
