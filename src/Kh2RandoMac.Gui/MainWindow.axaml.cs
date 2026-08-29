@@ -1480,6 +1480,14 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("Game data not extracted yet, click Extract Game Data first.");
         foreach (var note in KnownIssues.ForEnabled(_workspace))
             Log("WARNING: " + note);
+
+        // Reset restores the movie folder, so a bottle that was reset and set up again
+        // is playing cutscenes once more, and cutscenes crash the game here. Said at
+        // build time because that is the last moment before someone plays.
+        if (_config.GameDir != null && GameLocator.IsGameDir(_config.GameDir)
+            && !MovieService.AreMoviesSkipped(_config.GameDir))
+            Log("WARNING: Movies are on. Cutscenes crash the game under CrossOver, so the game " +
+                "will run until it reaches one. Click Movies to set 'Movies: Skipped'.");
         new PatchBuilder(_workspace).Build(Log, _config.Language);
     }
 

@@ -136,7 +136,8 @@ public class SetupService
         if (MovieService.AreMoviesSkipped(gameDir))
         {
             MovieService.RestoreMovies(gameDir);
-            log("Movie folder restored.");
+            log("Movie folder restored, so cutscenes will play again. They crash the game under");
+            log("CrossOver, so click Movies to skip them again before you next play.");
         }
 
         // The overlay is a bottle setting this app turned on, so leaving it would mean
