@@ -18,6 +18,11 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- The item tracker no longer stops responding after being open a while. Its output
+  was piped through this app, and those pipes were read only while this window was
+  open; once it closed the pipe filled and the tracker blocked mid-write, still
+  drawn and no longer clickable. Wine's output goes to a file beside the tracker
+  instead, which cannot fill and does not depend on this app running
 - Only one copy of the app runs at a time. Two sharing one settings file, mod
   folder and bottle do not coordinate, and an older copy left on the Desktop after
   an update is the easy way into that. A second copy now says so and closes

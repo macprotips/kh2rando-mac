@@ -296,30 +296,43 @@ public class TrackerService
         if (!File.Exists(ExePath(workspace)))
             throw new InvalidOperationException("Tracker not installed yet.");
 
-        // The tracker writes its KhTrackerSettings folder into its working directory;
-        // anchor it next to the exe so settings live in the workspace.
-        var psi = new ProcessStartInfo(CrossOverApp.BinIn("wine", bottle.OwningApp))
+        // Wine's output goes to a file, not to pipes owned by this app.
+        //
+        // The tracker is meant to sit open for a whole seed, and Wine emits fixme and
+        // err chatter the entire time. Piped here, those pipes are drained only while
+        // this window is open: close it, or have it fall over, and nothing reads them.
+        // The pipe fills after about 64 KB and Wine's next write blocks, which stalls
+        // the tracker mid-frame. The window stays on screen and stops responding, and
+        // force quit is the only way out. A file cannot fill or block, and it survives
+        // this app either way, which is also what makes it useful after a crash.
+        var outputLog = Path.Combine(TrackerDir(workspace), "tracker-wine.log");
+        var psi = new ProcessStartInfo("/bin/sh")
         {
             UseShellExecute = false,
             WorkingDirectory = TrackerDir(workspace),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
         };
-        psi.ArgumentList.Add("--bottle");
+        // Positional arguments rather than an interpolated command line: paths here
+        // contain spaces, and one of them is user-chosen.
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add("exec \"$1\" --bottle \"$2\" \"$3\" > \"$4\" 2>&1");
+        psi.ArgumentList.Add("kh2rando-tracker");
+        psi.ArgumentList.Add(CrossOverApp.BinIn("wine", bottle.OwningApp));
         psi.ArgumentList.Add(bottle.Name);
         psi.ArgumentList.Add(ExePath(workspace));
+        psi.ArgumentList.Add(outputLog);
+
         var p = Process.Start(psi)!;
         _ = Task.Run(async () =>
         {
             try
             {
-                var stdout = p.StandardOutput.ReadToEndAsync();
-                var stderr = p.StandardError.ReadToEndAsync();
                 await p.WaitForExitAsync();
-                static string Tail(string s) => s.Length > 1500 ? s[^1500..] : s;
                 FileLog.Write($"[tracker] wine process exited code={p.ExitCode}");
-                FileLog.Write($"[tracker] stdout tail: {Tail(await stdout).Trim()}");
-                FileLog.Write($"[tracker] stderr tail: {Tail(await stderr).Trim()}");
+                if (File.Exists(outputLog))
+                {
+                    var text = File.ReadAllText(outputLog);
+                    FileLog.Write($"[tracker] output tail: {(text.Length > 1500 ? text[^1500..] : text).Trim()}");
+                }
             }
             catch (Exception ex)
             {
