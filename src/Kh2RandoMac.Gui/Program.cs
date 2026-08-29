@@ -5,8 +5,18 @@ namespace Kh2RandoMac.Gui;
 internal static class Program
 {
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        // A fatal exception otherwise dies without a trace: the OS crash report cannot
+        // see into managed frames, so what actually threw is unknowable afterwards. One
+        // crash in the field has already gone undiagnosed for exactly this reason.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Kh2RandoMac.Core.FileLog.Write($"[crash] unhandled: {e.ExceptionObject}");
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            Kh2RandoMac.Core.FileLog.Write($"[crash] unobserved task: {e.Exception}");
+
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()

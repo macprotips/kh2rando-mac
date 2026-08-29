@@ -27,9 +27,11 @@ public static class FileLog
             lock (Lock)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
-                // Simple size cap: start over past 5 MB rather than growing forever.
+                // Size cap: past 5 MB the log rolls to .old rather than being deleted,
+                // so hitting the cap mid-session cannot erase the very history someone
+                // is about to be asked for.
                 if (File.Exists(LogPath) && new FileInfo(LogPath).Length > 5 * 1024 * 1024)
-                    File.Delete(LogPath);
+                    File.Move(LogPath, LogPath + ".old", true);
                 File.AppendAllText(LogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {message}\n");
             }
         }

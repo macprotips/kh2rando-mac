@@ -61,6 +61,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         FileLog.Write($"[gui] KH2 Rando Manager build {AppInfo.Build} started");
+        // The context every shared log gets asked for: which macOS, which CrossOver
+        // copies, which bottle, and whether the game was even reachable. Off the UI
+        // thread, since discovering CrossOver shells out to Spotlight.
+        _ = Task.Run(WriteEnvironmentToLog);
         VersionText.Text = $"Version {AppInfo.Build}";
         _workspace = new Workspace(_config.WorkspaceRoot);
         _workspace.EnsureDirectories();
@@ -682,6 +686,39 @@ public partial class MainWindow : Window
     }
 
     private void HideProgress() => Dispatcher.UIThread.Post(() => ProgressRow.IsVisible = false);
+
+    /// <summary>
+    /// A few lines of machine context at the top of each session, so a log someone
+    /// shares answers the standard first questions instead of prompting them.
+    /// </summary>
+    private void WriteEnvironmentToLog()
+    {
+        try
+        {
+            FileLog.Write($"[env] macOS {Environment.OSVersion.Version}, " +
+                $"{System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}");
+            var apps = CrossOverApp.Installed();
+            FileLog.Write(apps.Count == 0
+                ? "[env] CrossOver: none found"
+                : $"[env] CrossOver: {string.Join("; ", CrossOverApp.DescribeAll(apps))}");
+            var config = AppConfig.Load();
+            if (config.BottleName != null)
+            {
+                string stamp = "?";
+                try { stamp = Bottle.Resolve(config).CrossOverVersion ?? "unstamped"; } catch { }
+                FileLog.Write($"[env] bottle '{config.BottleName}' (last touched by CrossOver {stamp}), " +
+                    $"launcher {config.Launcher}, language '{config.Language}'");
+            }
+            var gameOk = config.GameDir != null && GameLocator.IsGameDir(config.GameDir);
+            FileLog.Write($"[env] game: {config.GameDir ?? "not set"} (reachable: {gameOk})");
+            FileLog.Write($"[env] files: {config.WorkspaceRoot} " +
+                $"({WorkspaceMover.FreeSpace(config.WorkspaceRoot) / 1024 / 1024 / 1024} GB free on that disk)");
+        }
+        catch (Exception ex)
+        {
+            FileLog.Write($"[env] context capture failed: {ex.Message}");
+        }
+    }
 
     private void SetBusy(bool busy)
     {
