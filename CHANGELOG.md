@@ -18,6 +18,16 @@
   written by staging beside the file and renaming into place, so an interrupted
   write can no longer leave a truncated file where a working one was. Corrupting a
   bottle's registry is the most expensive thing this app could do to a machine
+- The window is drawn on the CPU instead of through OpenGL. The GPU path crashed
+  with a null dereference while tearing down a rendering session, seconds after
+  Build & Run handed the screen to the game. Nothing here is more than text, a list
+  and a progress bar, so there was nothing to gain from the GPU and a crash to lose
+- An unfinished download no longer blocks its own retry. A clone that did not
+  finish left a folder with no mod.yml, which counted as installed for the install
+  button and as nothing at all for the mod list, so the mod could be neither
+  installed nor seen
+- Dropping mods on the window during another operation says they were not
+  installed, rather than discarding them with one line in the log
 - Reset turns the FPS HUD back off. It is a bottle setting this app switched on, so
   leaving it meant announcing the bottle was back to stock while it still drew an
   overlay. Reset also names both .NET runtimes it cannot take back, not just one
