@@ -22,6 +22,16 @@ public class PatchBuilder
         // Validate everything BEFORE wiping the previous build, so a bad state can't
         // destroy a working mod folder and leave nothing behind.
         var mods = new ModsService(_workspace).List().Where(m => m.Enabled).ToList();
+        // Mods installed before the wrong-game check existed, or copied in by hand,
+        // can still be for another game; built anyway they write files KH2 never
+        // reads, which looks like a mod that quietly does nothing.
+        foreach (var wrongGame in mods.Where(m => m.Metadata?.Game is { Length: > 0 } g
+                     && !g.Trim().Equals("kh2", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            progress?.Invoke($"WARNING: '{wrongGame.Name}' says it is a {wrongGame.Metadata!.Game.Trim()} mod, " +
+                "not KH2; skipping it in this build.");
+            mods.Remove(wrongGame);
+        }
         foreach (var mod in mods)
         {
             if (mod.Metadata?.Assets == null)

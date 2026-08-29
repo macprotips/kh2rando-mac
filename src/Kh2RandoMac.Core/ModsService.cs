@@ -63,11 +63,37 @@ public class ModsService
             Directory.Delete(modPath, true);
             throw new InvalidOperationException($"'{repo}' has no mod.yml, so it is not an OpenKH mod.");
         }
+        RefuseWrongGame(modPath, repo);
         progress?.Invoke($"Installed {repo}.");
         return repo;
     }
 
     private static readonly string[] PcPatchExtensions = { ".kh2pcpatch" };
+
+    /// <summary>
+    /// Refuse a mod made for a different game. mod.yml carries an optional game field,
+    /// and building a KH1 or BBS mod into the KH2 data does not fail, it just writes
+    /// files the game never reads, which looks like a mod that quietly does nothing.
+    /// The official KH2 feed never trips this; a hand-typed GitHub URL can.
+    /// </summary>
+    private static void RefuseWrongGame(string modPath, string displayName)
+    {
+        string? game = null;
+        try
+        {
+            using var stream = File.OpenRead(Path.Combine(modPath, "mod.yml"));
+            game = Metadata.Read(stream)?.Game?.Trim();
+        }
+        catch
+        {
+            return; // Unreadable metadata is reported elsewhere; not this check's job.
+        }
+        if (string.IsNullOrEmpty(game) || game.Equals("kh2", StringComparison.OrdinalIgnoreCase))
+            return;
+        Directory.Delete(modPath, true);
+        throw new InvalidOperationException(
+            $"'{displayName}' says it is a {game} mod, and this app builds KH2 mods only.");
+    }
 
     /// <summary>
     /// Install a mod, randomizer seed, or .kh2pcpatch archive. Returns the mod name
@@ -84,6 +110,7 @@ public class ModsService
         var modPath = _workspace.ModPath(modName);
         ReplaceExistingModDir(modPath, modName, progress);
         Directory.CreateDirectory(modPath);
+        var wrongGameCheckNeeded = !isPcPatch;
 
         var modRoot = Path.GetFullPath(modPath);
         var patchAssets = new List<AssetFile>();
@@ -130,6 +157,8 @@ public class ModsService
             using var stream = File.Create(Path.Combine(modPath, "mod.yml"));
             metadata.Write(stream);
         }
+        if (wrongGameCheckNeeded)
+            RefuseWrongGame(modPath, modName);
         progress?.Invoke($"Installed {modName}.");
         return modName;
     }

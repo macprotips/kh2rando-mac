@@ -316,3 +316,72 @@ public class UnfinishedDownloadTests : IDisposable
         Assert.False(Directory.Exists(_workspace.ModPath("Some/Mod")));
     }
 }
+
+/// <summary>
+/// Every mod in the official KH2 feed is for KH2, but a hand-typed GitHub URL or a
+/// stray zip can be a KH1 or BBS mod. Built anyway, it writes files KH2 never reads,
+/// which looks like a mod that quietly does nothing.
+/// </summary>
+public class WrongGameModTests : IDisposable
+{
+    private readonly string _root;
+    private readonly Workspace _workspace;
+
+    public WrongGameModTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "kh2rando-tests", Guid.NewGuid().ToString("N"));
+        _workspace = new Workspace(_root);
+        _workspace.EnsureDirectories();
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, true); } catch { }
+    }
+
+    private string MakeZip(string name, string modYml)
+    {
+        var zipPath = Path.Combine(_root, name + ".zip");
+        using var zip = System.IO.Compression.ZipFile.Open(zipPath,
+            System.IO.Compression.ZipArchiveMode.Create);
+        using var writer = new StreamWriter(zip.CreateEntry("mod.yml").Open());
+        writer.Write(modYml);
+        return zipPath;
+    }
+
+    [Fact]
+    public void ZipInstall_RefusesAModForAnotherGame()
+    {
+        var zip = MakeZip("bbs-mod", "title: A BBS Mod\ngame: bbs\nassets: []\n");
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => new ModsService(_workspace).InstallFromZip(zip));
+        Assert.Contains("bbs mod", ex.Message);
+        Assert.Empty(_workspace.InstalledMods());
+    }
+
+    [Fact]
+    public void ZipInstall_AcceptsKh2AndModsThatDoNotSay()
+    {
+        var mods = new ModsService(_workspace);
+        mods.InstallFromZip(MakeZip("kh2-mod", "title: For KH2\ngame: kh2\nassets: []\n"));
+        mods.InstallFromZip(MakeZip("silent-mod", "title: Says Nothing\nassets: []\n"));
+        Assert.Equal(2, _workspace.InstalledMods().Count);
+    }
+
+    [Fact]
+    public void Build_SkipsAWrongGameModAlreadyOnDisk()
+    {
+        // Installed before the check existed, or dropped into the folder by hand.
+        var dir = _workspace.ModPath("old-kh1-mod");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "mod.yml"), "title: KH1 Thing\ngame: kh1\nassets: []\n");
+        _workspace.SaveEnabledMods(new[] { "old-kh1-mod" });
+        Directory.CreateDirectory(_workspace.DataDir);
+
+        var messages = new List<string>();
+        new PatchBuilder(_workspace).Build(messages.Add);
+
+        Assert.Contains(messages, m => m.Contains("kh1 mod") && m.Contains("skipping"));
+        Assert.Contains(messages, m => m.Contains("Build complete: 0 mod(s)"));
+    }
+}
