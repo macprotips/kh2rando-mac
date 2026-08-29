@@ -534,8 +534,17 @@ public partial class MainWindow : Window
         FileLog.Write($"[gui] {message}");
         Dispatcher.UIThread.Post(() =>
         {
+            // Follow the newest line only for a reader already at the bottom; someone
+            // who scrolled up to read an earlier message must not be yanked back down
+            // by every new line. Judged before the append, while the extent still
+            // describes what they were looking at.
+            var wasAtEnd = LogScroll.Offset.Y + LogScroll.Viewport.Height
+                >= LogScroll.Extent.Height - 24;
             LogText.Text += $"\n{message}";
-            LogScroll.ScrollToEnd();
+            // After layout, not now: scrolled in the same pass as the append, the
+            // extent is still the old text's, so the view stops one line short.
+            if (wasAtEnd)
+                Dispatcher.UIThread.Post(LogScroll.ScrollToEnd, DispatcherPriority.Background);
             // Every step already announces itself in the log, so the newest line is the
             // best caption available. Warnings are skipped: they are asides, and one
             // would otherwise sit over the bar for the rest of the operation.

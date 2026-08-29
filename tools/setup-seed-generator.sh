@@ -46,6 +46,8 @@ else
   fi
 
   say "Installing Python dependencies (a few minutes)..."
+  say "(The official seed generator is a Python app. Everything here installs into"
+  say "the generator's own folder and changes nothing else on your Mac.)"
   "$PYBIN" -m venv "$DEST/.venv"
   "$DEST/.venv/bin/pip" install -q -r "$DEST/requirements.txt"
 
