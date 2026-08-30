@@ -32,7 +32,7 @@ The detailed version with checkpoints and troubleshooting is the
 
 1. Download [CrossOver](https://www.codeweavers.com/crossover) and drag it into
    Applications. It is the Mac app the game runs through; paid, with a free
-   14-day trial.
+   14-day trial. Sikarugir is a free alternative, but is untested at this time.
 2. Open CrossOver and click Install. Search for Steam and install it; CrossOver
    creates a Windows 10 bottle for it. Uncheck "Run Steam" when the installer
    finishes. (Epic version: install "Epic Games Launcher" instead.)

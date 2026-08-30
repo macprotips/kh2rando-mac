@@ -29,7 +29,8 @@ CrossOver is a Mac app that runs Windows programs. If the game already runs in
 CrossOver on your Mac, skip to Part 2.
 
 1. Download CrossOver from [codeweavers.com](https://www.codeweavers.com/crossover)
-   and drag it into your Applications folder.
+   and drag it into your Applications folder. Sikarugir is a free alternative, but
+   is untested at this time.
 2. Open CrossOver and click Install. Search for Steam and install it. CrossOver
    creates a new Windows 10 bottle named Steam: a private Windows environment living
    in a folder on your Mac.
