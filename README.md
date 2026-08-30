@@ -147,14 +147,12 @@ matters to a player was built by someone else.
 - **[LuaBackend](https://github.com/Sirius902/LuaBackend)** — TopazTK and Sirius902,
   for the Lua hook every script mod depends on.
 - **[KH2 Randomizer](https://github.com/tommadness/KH2Randomizer)** — tommadness and
-  the KH2 Rando community, for the randomizer and its seed generator, which this
-  installs and runs unmodified.
+  the KH2 Rando community.
 - **[Garden of Assemblage ROM Edition](https://github.com/KH2FM-Mods-Num/GoA-ROM-Edition)**
   — Num, for the mod every randomizer seed is built on.
 - **[KH2 Tracker](https://github.com/Dee-Ayy/KH2Tracker)** — Dee-Ayy, for the item
-  tracker, including the auto-tracking this runs beside the game.
-- **[Re:Fined](https://github.com/KH-ReFined/KH-ReFined)** — TopazTK and contributors,
-  for the quality-of-life overhaul this can install.
+  tracker.
+- **[Re:Fined](https://github.com/KH-ReFined/KH-ReFined)** — TopazTK and contributors.
 - **[KH-SteamDeck-Setup](https://github.com/KHOmega/KH-SteamDeck-Setup)** — KHOmega,
   for the Linux setup guides whose Wine recipes this port adapts to CrossOver.
 
